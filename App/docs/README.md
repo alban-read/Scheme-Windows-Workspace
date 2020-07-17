@@ -1,3 +1,5 @@
+*This is not the repo readme; this is part of the apps in-app documentation*
+
 ### Help Index
 
 *Navigate **back** = **alt-left-arrow***
