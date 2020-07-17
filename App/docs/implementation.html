@@ -1,0 +1,528 @@
+<!doctype html>
+<html>
+<head>
+<meta charset='UTF-8'><meta name='viewport' content='width=device-width initial-scale=1'>
+<title>implementation</title><link href='https://fonts.loli.net/css?family=Open+Sans:400italic,700italic,700,400&subset=latin,latin-ext' rel='stylesheet' type='text/css' /><style type='text/css'>html {overflow-x: initial !important;}:root { --bg-color:#ffffff; --text-color:#333333; --select-text-bg-color:#B5D6FC; --select-text-font-color:auto; --monospace:"Lucida Console",Consolas,"Courier",monospace; }
+html { font-size: 14px; background-color: var(--bg-color); color: var(--text-color); font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+body { margin: 0px; padding: 0px; height: auto; bottom: 0px; top: 0px; left: 0px; right: 0px; font-size: 1rem; line-height: 1.42857; overflow-x: hidden; background: inherit; tab-size: 4; }
+iframe { margin: auto; }
+a.url { word-break: break-all; }
+a:active, a:hover { outline: 0px; }
+.in-text-selection, ::selection { text-shadow: none; background: var(--select-text-bg-color); color: var(--select-text-font-color); }
+#write { margin: 0px auto; height: auto; width: inherit; word-break: normal; overflow-wrap: break-word; position: relative; white-space: normal; overflow-x: visible; padding-top: 40px; }
+#write.first-line-indent p { text-indent: 2em; }
+#write.first-line-indent li p, #write.first-line-indent p * { text-indent: 0px; }
+#write.first-line-indent li { margin-left: 2em; }
+.for-image #write { padding-left: 8px; padding-right: 8px; }
+body.typora-export { padding-left: 30px; padding-right: 30px; }
+.typora-export .footnote-line, .typora-export li, .typora-export p { white-space: pre-wrap; }
+@media screen and (max-width: 500px) {
+  body.typora-export { padding-left: 0px; padding-right: 0px; }
+  #write { padding-left: 20px; padding-right: 20px; }
+  .CodeMirror-sizer { margin-left: 0px !important; }
+  .CodeMirror-gutters { display: none !important; }
+}
+#write li > figure:last-child { margin-bottom: 0.5rem; }
+#write ol, #write ul { position: relative; }
+img { max-width: 100%; vertical-align: middle; image-orientation: from-image; }
+button, input, select, textarea { color: inherit; font: inherit; }
+input[type="checkbox"], input[type="radio"] { line-height: normal; padding: 0px; }
+*, ::after, ::before { box-sizing: border-box; }
+#write h1, #write h2, #write h3, #write h4, #write h5, #write h6, #write p, #write pre { width: inherit; }
+#write h1, #write h2, #write h3, #write h4, #write h5, #write h6, #write p { position: relative; }
+p { line-height: inherit; }
+h1, h2, h3, h4, h5, h6 { break-after: avoid-page; break-inside: avoid; orphans: 4; }
+p { orphans: 4; }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.8rem; }
+h3 { font-size: 1.6rem; }
+h4 { font-size: 1.4rem; }
+h5 { font-size: 1.2rem; }
+h6 { font-size: 1rem; }
+.md-math-block, .md-rawblock, h1, h2, h3, h4, h5, h6, p { margin-top: 1rem; margin-bottom: 1rem; }
+.hidden { display: none; }
+.md-blockmeta { color: rgb(204, 204, 204); font-weight: 700; font-style: italic; }
+a { cursor: pointer; }
+sup.md-footnote { padding: 2px 4px; background-color: rgba(238, 238, 238, 0.7); color: rgb(85, 85, 85); border-radius: 4px; cursor: pointer; }
+sup.md-footnote a, sup.md-footnote a:hover { color: inherit; text-transform: inherit; text-decoration: inherit; }
+#write input[type="checkbox"] { cursor: pointer; width: inherit; height: inherit; }
+figure { overflow-x: auto; margin: 1.2em 0px; max-width: calc(100% + 16px); padding: 0px; }
+figure > table { margin: 0px; }
+tr { break-inside: avoid; break-after: auto; }
+thead { display: table-header-group; }
+table { border-collapse: collapse; border-spacing: 0px; width: 100%; overflow: auto; break-inside: auto; text-align: left; }
+table.md-table td { min-width: 32px; }
+.CodeMirror-gutters { border-right: 0px; background-color: inherit; }
+.CodeMirror-linenumber { user-select: none; }
+.CodeMirror { text-align: left; }
+.CodeMirror-placeholder { opacity: 0.3; }
+.CodeMirror pre { padding: 0px 4px; }
+.CodeMirror-lines { padding: 0px; }
+div.hr:focus { cursor: none; }
+#write pre { white-space: pre-wrap; }
+#write.fences-no-line-wrapping pre { white-space: pre; }
+#write pre.ty-contain-cm { white-space: normal; }
+.CodeMirror-gutters { margin-right: 4px; }
+.md-fences { font-size: 0.9rem; display: block; break-inside: avoid; text-align: left; overflow: visible; white-space: pre; background: inherit; position: relative !important; }
+.md-diagram-panel { width: 100%; margin-top: 10px; text-align: center; padding-top: 0px; padding-bottom: 8px; overflow-x: auto; }
+#write .md-fences.mock-cm { white-space: pre-wrap; }
+.md-fences.md-fences-with-lineno { padding-left: 0px; }
+#write.fences-no-line-wrapping .md-fences.mock-cm { white-space: pre; overflow-x: auto; }
+.md-fences.mock-cm.md-fences-with-lineno { padding-left: 8px; }
+.CodeMirror-line, twitterwidget { break-inside: avoid; }
+.footnotes { opacity: 0.8; font-size: 0.9rem; margin-top: 1em; margin-bottom: 1em; }
+.footnotes + .footnotes { margin-top: 0px; }
+.md-reset { margin: 0px; padding: 0px; border: 0px; outline: 0px; vertical-align: top; background: 0px 0px; text-decoration: none; text-shadow: none; float: none; position: static; width: auto; height: auto; white-space: nowrap; cursor: inherit; -webkit-tap-highlight-color: transparent; line-height: normal; font-weight: 400; text-align: left; box-sizing: content-box; direction: ltr; }
+li div { padding-top: 0px; }
+blockquote { margin: 1rem 0px; }
+li .mathjax-block, li p { margin: 0.5rem 0px; }
+li { margin: 0px; position: relative; }
+blockquote > :last-child { margin-bottom: 0px; }
+blockquote > :first-child, li > :first-child { margin-top: 0px; }
+.footnotes-area { color: rgb(136, 136, 136); margin-top: 0.714rem; padding-bottom: 0.143rem; white-space: normal; }
+#write .footnote-line { white-space: pre-wrap; }
+@media print {
+  body, html { border: 1px solid transparent; height: 99%; break-after: avoid; break-before: avoid; font-variant-ligatures: no-common-ligatures; }
+  #write { margin-top: 0px; padding-top: 0px; border-color: transparent !important; }
+  .typora-export * { -webkit-print-color-adjust: exact; }
+  html.blink-to-pdf { font-size: 13px; }
+  .typora-export #write { padding-left: 32px; padding-right: 32px; padding-bottom: 0px; break-after: avoid; }
+  .typora-export #write::after { height: 0px; }
+  .is-mac table { break-inside: avoid; }
+}
+.footnote-line { margin-top: 0.714em; font-size: 0.7em; }
+a img, img a { cursor: pointer; }
+pre.md-meta-block { font-size: 0.8rem; min-height: 0.8rem; white-space: pre-wrap; background: rgb(204, 204, 204); display: block; overflow-x: hidden; }
+p > .md-image:only-child:not(.md-img-error) img, p > img:only-child { display: block; margin: auto; }
+#write.first-line-indent p > .md-image:only-child:not(.md-img-error) img { left: -2em; position: relative; }
+p > .md-image:only-child { display: inline-block; width: 100%; }
+#write .MathJax_Display { margin: 0.8em 0px 0px; }
+.md-math-block { width: 100%; }
+.md-math-block:not(:empty)::after { display: none; }
+[contenteditable="true"]:active, [contenteditable="true"]:focus, [contenteditable="false"]:active, [contenteditable="false"]:focus { outline: 0px; box-shadow: none; }
+.md-task-list-item { position: relative; list-style-type: none; }
+.task-list-item.md-task-list-item { padding-left: 0px; }
+.md-task-list-item > input { position: absolute; top: 0px; left: 0px; margin-left: -1.2em; margin-top: calc(1em - 10px); border: none; }
+.math { font-size: 1rem; }
+.md-toc { min-height: 3.58rem; position: relative; font-size: 0.9rem; border-radius: 10px; }
+.md-toc-content { position: relative; margin-left: 0px; }
+.md-toc-content::after, .md-toc::after { display: none; }
+.md-toc-item { display: block; color: rgb(65, 131, 196); }
+.md-toc-item a { text-decoration: none; }
+.md-toc-inner:hover { text-decoration: underline; }
+.md-toc-inner { display: inline-block; cursor: pointer; }
+.md-toc-h1 .md-toc-inner { margin-left: 0px; font-weight: 700; }
+.md-toc-h2 .md-toc-inner { margin-left: 2em; }
+.md-toc-h3 .md-toc-inner { margin-left: 4em; }
+.md-toc-h4 .md-toc-inner { margin-left: 6em; }
+.md-toc-h5 .md-toc-inner { margin-left: 8em; }
+.md-toc-h6 .md-toc-inner { margin-left: 10em; }
+@media screen and (max-width: 48em) {
+  .md-toc-h3 .md-toc-inner { margin-left: 3.5em; }
+  .md-toc-h4 .md-toc-inner { margin-left: 5em; }
+  .md-toc-h5 .md-toc-inner { margin-left: 6.5em; }
+  .md-toc-h6 .md-toc-inner { margin-left: 8em; }
+}
+a.md-toc-inner { font-size: inherit; font-style: inherit; font-weight: inherit; line-height: inherit; }
+.footnote-line a:not(.reversefootnote) { color: inherit; }
+.md-attr { display: none; }
+.md-fn-count::after { content: "."; }
+code, pre, samp, tt { font-family: var(--monospace); }
+kbd { margin: 0px 0.1em; padding: 0.1em 0.6em; font-size: 0.8em; color: rgb(36, 39, 41); background: rgb(255, 255, 255); border: 1px solid rgb(173, 179, 185); border-radius: 3px; box-shadow: rgba(12, 13, 14, 0.2) 0px 1px 0px, rgb(255, 255, 255) 0px 0px 0px 2px inset; white-space: nowrap; vertical-align: middle; }
+.md-comment { color: rgb(162, 127, 3); opacity: 0.8; font-family: var(--monospace); }
+code { text-align: left; vertical-align: initial; }
+a.md-print-anchor { white-space: pre !important; border-width: initial !important; border-style: none !important; border-color: initial !important; display: inline-block !important; position: absolute !important; width: 1px !important; right: 0px !important; outline: 0px !important; background: 0px 0px !important; text-decoration: initial !important; text-shadow: initial !important; }
+.md-inline-math .MathJax_SVG .noError { display: none !important; }
+.html-for-mac .inline-math-svg .MathJax_SVG { vertical-align: 0.2px; }
+.md-math-block .MathJax_SVG_Display { text-align: center; margin: 0px; position: relative; text-indent: 0px; max-width: none; max-height: none; min-height: 0px; min-width: 100%; width: auto; overflow-y: hidden; display: block !important; }
+.MathJax_SVG_Display, .md-inline-math .MathJax_SVG_Display { width: auto; margin: inherit; display: inline-block !important; }
+.MathJax_SVG .MJX-monospace { font-family: var(--monospace); }
+.MathJax_SVG .MJX-sans-serif { font-family: sans-serif; }
+.MathJax_SVG { display: inline; font-style: normal; font-weight: 400; line-height: normal; zoom: 90%; text-indent: 0px; text-align: left; text-transform: none; letter-spacing: normal; word-spacing: normal; overflow-wrap: normal; white-space: nowrap; float: none; direction: ltr; max-width: none; max-height: none; min-width: 0px; min-height: 0px; border: 0px; padding: 0px; margin: 0px; }
+.MathJax_SVG * { transition: none 0s ease 0s; }
+.MathJax_SVG_Display svg { vertical-align: middle !important; margin-bottom: 0px !important; margin-top: 0px !important; }
+.os-windows.monocolor-emoji .md-emoji { font-family: "Segoe UI Symbol", sans-serif; }
+.md-diagram-panel > svg { max-width: 100%; }
+[lang="flow"] svg, [lang="mermaid"] svg { max-width: 100%; height: auto; }
+[lang="mermaid"] .node text { font-size: 1rem; }
+table tr th { border-bottom: 0px; }
+video { max-width: 100%; display: block; margin: 0px auto; }
+iframe { max-width: 100%; width: 100%; border: none; }
+.highlight td, .highlight tr { border: 0px; }
+svg[id^="mermaidChart"] { line-height: 1em; }
+mark { background: rgb(255, 255, 0); color: rgb(0, 0, 0); }
+.md-html-inline .md-plain, .md-html-inline strong, mark .md-inline-math, mark strong { color: inherit; }
+mark .md-meta { color: rgb(0, 0, 0); opacity: 0.3 !important; }
+
+
+:root {
+    --side-bar-bg-color: #fafafa;
+    --control-text-color: #777;
+}
+
+@include-when-export url(https://fonts.loli.net/css?family=Open+Sans:400italic,700italic,700,400&subset=latin,latin-ext);
+
+/* open-sans-regular - latin-ext_latin */
+  /* open-sans-italic - latin-ext_latin */
+    /* open-sans-700 - latin-ext_latin */
+    /* open-sans-700italic - latin-ext_latin */
+  html {
+    font-size: 16px;
+}
+
+body {
+    font-family: "Open Sans","Clear Sans", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: rgb(51, 51, 51);
+    line-height: 1.6;
+}
+
+#write {
+    max-width: 860px;
+  	margin: 0 auto;
+  	padding: 30px;
+    padding-bottom: 100px;
+}
+
+@media only screen and (min-width: 1400px) {
+	#write {
+		max-width: 1024px;
+	}
+}
+
+@media only screen and (min-width: 1800px) {
+	#write {
+		max-width: 1200px;
+	}
+}
+
+#write > ul:first-child,
+#write > ol:first-child{
+    margin-top: 30px;
+}
+
+a {
+    color: #4183C4;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+    position: relative;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-weight: bold;
+    line-height: 1.4;
+    cursor: text;
+}
+h1:hover a.anchor,
+h2:hover a.anchor,
+h3:hover a.anchor,
+h4:hover a.anchor,
+h5:hover a.anchor,
+h6:hover a.anchor {
+    text-decoration: none;
+}
+h1 tt,
+h1 code {
+    font-size: inherit;
+}
+h2 tt,
+h2 code {
+    font-size: inherit;
+}
+h3 tt,
+h3 code {
+    font-size: inherit;
+}
+h4 tt,
+h4 code {
+    font-size: inherit;
+}
+h5 tt,
+h5 code {
+    font-size: inherit;
+}
+h6 tt,
+h6 code {
+    font-size: inherit;
+}
+h1 {
+    padding-bottom: .3em;
+    font-size: 2.25em;
+    line-height: 1.2;
+    border-bottom: 1px solid #eee;
+}
+h2 {
+   padding-bottom: .3em;
+    font-size: 1.75em;
+    line-height: 1.225;
+    border-bottom: 1px solid #eee;
+}
+h3 {
+    font-size: 1.5em;
+    line-height: 1.43;
+}
+h4 {
+    font-size: 1.25em;
+}
+h5 {
+    font-size: 1em;
+}
+h6 {
+   font-size: 1em;
+    color: #777;
+}
+p,
+blockquote,
+ul,
+ol,
+dl,
+table{
+    margin: 0.8em 0;
+}
+li>ol,
+li>ul {
+    margin: 0 0;
+}
+hr {
+    height: 2px;
+    padding: 0;
+    margin: 16px 0;
+    background-color: #e7e7e7;
+    border: 0 none;
+    overflow: hidden;
+    box-sizing: content-box;
+}
+
+li p.first {
+    display: inline-block;
+}
+ul,
+ol {
+    padding-left: 30px;
+}
+ul:first-child,
+ol:first-child {
+    margin-top: 0;
+}
+ul:last-child,
+ol:last-child {
+    margin-bottom: 0;
+}
+blockquote {
+    border-left: 4px solid #dfe2e5;
+    padding: 0 15px;
+    color: #777777;
+}
+blockquote blockquote {
+    padding-right: 0;
+}
+table {
+    padding: 0;
+    word-break: initial;
+}
+table tr {
+    border-top: 1px solid #dfe2e5;
+    margin: 0;
+    padding: 0;
+}
+table tr:nth-child(2n),
+thead {
+    background-color: #f8f8f8;
+}
+table tr th {
+    font-weight: bold;
+    border: 1px solid #dfe2e5;
+    border-bottom: 0;
+    margin: 0;
+    padding: 6px 13px;
+}
+table tr td {
+    border: 1px solid #dfe2e5;
+    margin: 0;
+    padding: 6px 13px;
+}
+table tr th:first-child,
+table tr td:first-child {
+    margin-top: 0;
+}
+table tr th:last-child,
+table tr td:last-child {
+    margin-bottom: 0;
+}
+
+.CodeMirror-lines {
+    padding-left: 4px;
+}
+
+.code-tooltip {
+    box-shadow: 0 1px 1px 0 rgba(0,28,36,.3);
+    border-top: 1px solid #eef2f2;
+}
+
+.md-fences,
+code,
+tt {
+    border: 1px solid #e7eaed;
+    background-color: #f8f8f8;
+    border-radius: 3px;
+    padding: 0;
+    padding: 2px 4px 0px 4px;
+    font-size: 0.9em;
+}
+
+code {
+    background-color: #f3f4f4;
+    padding: 0 2px 0 2px;
+}
+
+.md-fences {
+    margin-bottom: 15px;
+    margin-top: 15px;
+    padding-top: 8px;
+    padding-bottom: 6px;
+}
+
+
+.md-task-list-item > input {
+  margin-left: -1.3em;
+}
+
+@media print {
+    html {
+        font-size: 13px;
+    }
+    table,
+    pre {
+        page-break-inside: avoid;
+    }
+    pre {
+        word-wrap: break-word;
+    }
+}
+
+.md-fences {
+	background-color: #f8f8f8;
+}
+#write pre.md-meta-block {
+	padding: 1rem;
+    font-size: 85%;
+    line-height: 1.45;
+    background-color: #f7f7f7;
+    border: 0;
+    border-radius: 3px;
+    color: #777777;
+    margin-top: 0 !important;
+}
+
+.mathjax-block>.code-tooltip {
+	bottom: .375rem;
+}
+
+.md-mathjax-midline {
+    background: #fafafa;
+}
+
+#write>h3.md-focus:before{
+	left: -1.5625rem;
+	top: .375rem;
+}
+#write>h4.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+#write>h5.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+#write>h6.md-focus:before{
+	left: -1.5625rem;
+	top: .285714286rem;
+}
+.md-image>.md-meta {
+    /*border: 1px solid #ddd;*/
+    border-radius: 3px;
+    padding: 2px 0px 0px 4px;
+    font-size: 0.9em;
+    color: inherit;
+}
+
+.md-tag {
+    color: #a7a7a7;
+    opacity: 1;
+}
+
+.md-toc { 
+    margin-top:20px;
+    padding-bottom:20px;
+}
+
+.sidebar-tabs {
+    border-bottom: none;
+}
+
+#typora-quick-open {
+    border: 1px solid #ddd;
+    background-color: #f8f8f8;
+}
+
+#typora-quick-open-item {
+    background-color: #FAFAFA;
+    border-color: #FEFEFE #e5e5e5 #e5e5e5 #eee;
+    border-style: solid;
+    border-width: 1px;
+}
+
+/** focus mode */
+.on-focus-mode blockquote {
+    border-left-color: rgba(85, 85, 85, 0.12);
+}
+
+header, .context-menu, .megamenu-content, footer{
+    font-family: "Segoe UI", "Arial", sans-serif;
+}
+
+.file-node-content:hover .file-node-icon,
+.file-node-content:hover .file-node-open-state{
+    visibility: visible;
+}
+
+.mac-seamless-mode #typora-sidebar {
+    background-color: #fafafa;
+    background-color: var(--side-bar-bg-color);
+}
+
+.md-lang {
+    color: #b4654d;
+}
+
+.html-for-mac .context-menu {
+    --item-hover-bg-color: #E6F0FE;
+}
+
+#md-notification .btn {
+    border: 0;
+}
+
+.dropdown-menu .divider {
+    border-color: #e5e5e5;
+}
+
+.ty-preferences .window-content {
+    background-color: #fafafa;
+}
+
+.ty-preferences .nav-group-item.active {
+    color: white;
+    background: #999;
+}
+
+
+</style>
+</head>
+<body class='typora-export os-windows' >
+<div  id='write'  class = ''><h2><a name="implementation" class="md-header-anchor"></a><span>Implementation</span></h2><p><span> </span><a href='Readme.html'><span>Index</span></a><span>  </span></p><p>&nbsp;</p><h4><a name="scheme" class="md-header-anchor"></a><span>Scheme </span></h4><p><span>Supports functional and imperative programming and allows for efficient recursive algorithms.</span></p><p><span>In 1975 Gerald J. Sussman and Guy L. Steele Jr. began experimenting; this led to the publication during 1976–1978 of a series of papers describing a new dialect of Lisp called Scheme.</span></p><p><span>In 1998, Sussman and Steele remarked that the minimalism of Scheme was not a conscious design goal, but rather the unintended outcome of the design process. &quot;We were actually trying to build something complicated and discovered, serendipitously, that we had accidentally designed something that met all our goals but was much simpler than we had intended....we realized that the lambda calculus—a small, simple formalism—could serve as the core of a powerful and expressive programming language.&quot;</span></p><p><span>Very modern features of scheme are lexical scoping; first class functions; closures; and continuations.</span></p><h4><a name="chez-scheme" class="md-header-anchor"></a><span>Chez Scheme </span></h4><p><span>Chez Scheme supports all standard features of Scheme, including first-class procedures, proper treatment of tail calls, continuations, user-defined records, libraries, exceptions, and hygienic macro expansion.</span></p><p><span>Chez Scheme also includes extensive support for interfacing with C and other languages, support for multiple threads possibly running on multiple cores, non-blocking I/O, and many other features.</span></p><p><span>The Chez Scheme implementation consists of a compiler, run-time system, and programming environment. Although an interpreter is available, all code is compiled by default. Source code is compiled on-the-fly when loaded from a source file or entered via the shell. A source file can also be precompiled into a stored binary form and automatically recompiled when its dependencies change. Whether compiling on the fly or precompiling, the compiler produces optimized machine code, with some optimization across separately compiled library boundaries. The compiler can also be directed to perform whole-program compilation, which does full cross-library optimization and also reduces a program and the libraries upon which it depends to a single binary.</span></p><p><span>The run-time system interfaces with the operating system and supports, among other things, binary and textual (Unicode) I/O, automatic storage management (dynamic memory allocation and generational garbage collection), library management, and exception handling. By default, the compiler is included in the run-time system, allowing programs to be generated and compiled at run time, and storage for dynamically compiled code, just like any other dynamically allocated storage, is automatically reclaimed by the garbage collector.</span></p><p><span>The R6RS core of the Chez Scheme language is described in </span><a href='http://www.scheme.com/tspl4/'><span>The Scheme Programming Language</span></a><span>, which also includes an introduction to Scheme and a set of example programs. Chez Scheme&#39;s additional language, run-time system, and programming environment features are described in the </span><a href='http://cisco.github.io/ChezScheme/csug9.5/csug.html'><span>Chez Scheme User&#39;s Guide</span></a><span>. The latter includes a shared index and a shared summary of forms, with links where appropriate to the former, so it is often the best starting point.</span></p><p><a href='#contents'><span>contents</span></a></p><hr /><h3><a name="a-nameimplementationimplementation-of-this-programa" class="md-header-anchor"></a><a name="implementation"><span>Implementation of this program</span></a></h3><p><span>Keeping up to date</span></p><ul><li><span>The version of scheme used; is unmodified; I use the Chez Scheme windows binary installer to provide the lib and dll files this links to; no part of that code is changed.</span></li><li><span>Each major c++ library comes in from vcpkg a Microsoft c++ package manager; the set of packages for some versions of this app are many gigabytes in size; the package manager keeps them all up to date.</span></li><li><span>There are solutions for the C++ projects that run in Visual Studio 2017-2019; they assume vcpkg exists .</span></li></ul><p>&nbsp;</p><h5><a name="app" class="md-header-anchor"></a><span>App</span></h5><p><span>The workspace app is written in C++ using the Win32cpp library.</span></p><p><span>This adds human oriented interactive IO to the Scheme engine; which otherwise uses a terminal.</span></p><p><span>The App provides views as arrangeable panes or tiles for text, graphics, html.</span></p><p><span>And connects to Scheme</span></p><p><span>From the C++ worlds perspective</span></p><ul><li><span>The app is a workspace that allows you to write and run Scheme code.</span></li></ul><p><span>In the real world I tend to link in DLLs from other C libraries and create scheme libraries.</span></p><p><span>When doing that you can use Scheme either as a way of automating C++ functions; or you can regard the C++ app as a number of functions that act as extensions  to Scheme.</span></p><p><span>A program is either a Script in Scheme or a C++ application with Scheme scripting.</span></p><h5><a name="composition-of-the-app" class="md-header-anchor"></a><span>Composition of the app</span></h5><p><span>This App uses Win32cpp a Win32 library (it is 64 bit; the 32 is the name of the Windows API); this App includes only view related things; like the scintilla text editor; the GDI+ graphics pane; and the windows browser pane.</span></p><h5><a name="binding-to-engine" class="md-header-anchor"></a><span>binding to engine</span></h5><p><span>The scheme engine is linked in directly and called on a thread; functions have been added to scheme in the extension libraries; so that the app has functions in scheme to talk to.</span></p><ul><li><span>The app calls into scheme functions.</span></li></ul><p><span>As each scheme expression is invoked; a call is made to scheme on a scheme thread.</span></p><ul><li><span>Only a single scheme thread is active running a single function; that function may be an entire program of course.</span></li><li><span>The App has several of its own threads; so you can carry on editing while scheme runs the latest expression.</span></li></ul><h5><a name="garbage-collection-in-the-app" class="md-header-anchor"></a><span>Garbage collection in the App</span></h5><p><span>Scheme is a a garbage collected language; lots of little items get created all the time; and they are automatically deleted when no longer needed. Chez Scheme has the interesting and famous big bag of pages garbage collector.</span></p><p><span>When using the App; the Apps threads are always active; but the scheme engine; is probably doing nothing a lot of the time; it is not running all the time in an idle loop; as it does when it runs in a terminal.</span></p><p><span>Periodically the App asks scheme (when it is idle) to wake up and do some garbage collection; this call actually triggers the heuristics in the Scheme engine; that triggers collection after N function calls. </span></p><p><span>This is because garbage can build up whenever a Scheme function runs; and while scheme is not constantly running to tidy up after itself. </span></p><p><span>This means in the App the memory usage can be very </span><code>bursty</code><span>; it is smoother in the terminal; as the collector is running more frequently in the terminal; and less frequently in the App.</span></p><p><span>None the less as you run the GUI you will see the memory is fairly aggressively repossessed over time.</span></p><p><span>This also the reason why the CPU usage of the app seldom drops to 0; it often has (a very small) CPU overhead; as it wakes up the Scheme engine periodically.</span></p><p><span>Note that whenever a large scheme program is running; it is also collecting garbage; this applies especially to small functions that create a large number of objects.</span></p><p><span>There is a thread in the App that asks Scheme to tidy up periodically. </span></p><p><a href='#contents'><span>contents</span></a></p><hr /><p><span> </span></p><hr /><h4><a name="working-in-the-workspace" class="md-header-anchor"></a><span>Working in the Workspace </span></h4><p><span>The application displays a workspace;  with a fixed number of tiled panes.</span></p><p><span>You can move these; and change their size; they never overlap; this is intentional.</span></p><p><span>Typically these panes contain text; there is also browser pane; meant for documentation.</span></p><p><span>There is an image pane; that displays just graphics; It is like a scratch pane; for when you are working on a graphical function.</span></p><p><span>The concept here is not to create an IDE or even a replacement for an editor; the concept is to create an interactive workspace-like alternative to a terminal. On Mac OS classic there were workspaces and </span><em><span>programmers workbenches</span></em><span> long before there were terminals in OSX; and </span><em><span>I preferred those.</span></em></p><p><span>Unlike a terminal - in a workspace results are captured rather than flying past the screen; there is a separate pane for storing messages from functions; distinct from a pane for results from functions and so on.</span></p><p><span>You can do things like select </span><em><span>parts of a function</span></em><span> and evaluate them; using </span><shift><return></p><p><span>There is one scheme interpreter in the application; not one per thread; when you evaluate an expression that creates a variable or defines a new function; or load a whole script; that is added to your Scheme environment; the next time you evaluate an expression it is still there waiting for you; so your program can be gradually; interactively written and tested step by step.</span></p><hr /><h5><a name="implementation-of-the-app" class="md-header-anchor"></a><span>Implementation of the App</span></h5><p><span>This is a 64bit; Win32 application; based on the very nice Win32cpp library.</span></p><ul><li><span>Win32cpp is a MIT licensed open source library; and has only been slightly forked. </span></li><li><span>It is a light weight way to write Windows applications in C++.</span></li><li><span>The library provides the tiled docking container.</span></li></ul><p><span>The application contains docks within tiled views; I think of these as panes in a tiled workspace; you can move them around; and change their size; they do not overlap; this is intentional.</span></p><p><span>The Scintilla text editor component is used for the text views; Scintilla is a programmable text editor for embedding in applications; as a pure text editor; it should be quick.</span></p><p><span>This workspace is bound to the Scheme engine </span></p><p><span>As the application starts; it initializes scheme; and loads some scripts; extends scheme with any extra DLL and library code and so on. </span></p><p><span>Scheme is part of this application; albeit embedded in a DLL.</span></p><p><span>In the scheme library there is a function the GUI uses to evaluate an expression.</span></p><ul><li><span>This function is an interpreter; it evaluates each expression sent over from the expression evaluator window.</span></li><li><span>This evaluation happens each time in a new thread; so it does not block the windows UI for the App.</span></li></ul><p><a href='#contents'><span>contents</span></a></p><hr /><h4><a name="recompile-this-application" class="md-header-anchor"></a><span>Recompile this application</span></h4><p><span>Some of the functions in this code; are fairly old C code; and some use quite new modern C++ functions; it contains parts written years apart; in different styles; and merged together; so not ideal; I am working to modernize it; using the latest production versions of C/C++ available.</span></p><p><span>None the less it is not hard to compile this App; using the visual studio solution. </span></p><p><span>It can be harder to link in all the dependencies; the good news is that I am deliberately using library code that is all available in vcpkg (the c++ package management system.) I hope  this means there will no longer be a dozen versions of zlib built into this one app.</span></p><p><span>You need to install vpckg; download and compile a couple of libraries; (re2, scilexer) and visual studio will find it.</span></p><p><span>To compile scheme; you need scheme; but all the scheme parts; can be taken directly from the Windows binary Chez Scheme installer; I am using the non threaded x64 version; the Scheme parts are completely unmodified. </span></p><h4><a name="supporting-more-threads" class="md-header-anchor"></a><span>Supporting more threads</span></h4><p><span>I would like to support the threaded version of Scheme; which was tagged as experimental for windows; when this project started.</span></p><p><span>I have written some multi-threaded windows applications before; and the combination of windows, threads and C/C++ is not a safe one; especially when it comes to </span><em><span>not crashing and losing all of your work</span></em><span>; which is a feature I value even more highly than speed.</span></p><p><span>Obviously we can run more than one process; the scheme.exe file can run scripts; so spawning multiple processes is very possible; running multiple scheme engines in their own threads is also interesting to explore; although it looks difficult.</span></p><p><span> </span></p><hr /><h4><a name="the-ecological-imperative-for-using-c-and-lisp" class="md-header-anchor"></a><span>The ecological imperative for using C++ and Lisp</span></h4><p><span>Stop killing the planet by running your </span><code>dog slow interpreters</code><span>; on cloud computing super clusters.</span></p><p><img src="environmentalism.png" referrerpolicy="no-referrer"></p><p>&nbsp;</p><p>&nbsp;</p><hr /><p><span> </span></p><hr /><h3><a name="latest-state-release-note" class="md-header-anchor"></a><span>Latest state: release note</span></h3><p><span>July 2020 minimal edition.</span></p><ul><li><span>Ripped out reams of library code; including a giant DLL glue library.</span></li></ul><p><span>Latest version of Cisco Chez Scheme 9.5.3</span></p><ul><li><span>This app has been tested and built on Windows 10 versions </span><em><span>from the future</span></em><span>.</span></li><li><span>Using computer languages from the past</span></li></ul><p><strong><span>Performance</span></strong></p><p><span>Cisco Chez Scheme is the products of decades of work; and has a fast optimizing nano-pass-compiler; that converts a scheme library to fast machine code.</span></p><p><a href='https://github.com/cisco/ChezScheme' target='_blank' class='url'>https://github.com/cisco/ChezScheme</a></p><p><span>The C++ is compiled into the app;  and tends to be quick.   </span></p><p><span>Code defined in a scheme library; is faster than code in the top-level; although all code is compiled; the top level is not a static environment so is slower.</span></p><p><span>The time function shown above only works in the terminal.</span></p><p><span>The App notes the time; the last command took to run; on the right of the status bar.</span></p><p><span> </span></p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p><p>&nbsp;</p></div>
+</body>
+</html>
