@@ -69,17 +69,52 @@
   (lambda (s)
     ((foreign-procedure "setInputed" (string) void) s)))
 
+
+(define display-statistics-print-port display-statistics) 
+
 (define pretty-print-port pretty-print)
 
-(define pretty-print-string
-  (lambda (x)
-    (with-output-to-string (lambda () (pretty-print-port x)))))
+(define printf-print-port printf)
+
+(define printf-print-transcript
+  (lambda (x o)
+    (transcript0
+      (with-output-to-string (lambda () (printf-print-port x o))))))
+
+(define display-statistics-transcript
+  (lambda ()
+    (transcript0
+      (with-output-to-string (lambda () (display-statistics-print-port))))))
 
 (define pretty-print-transcript
   (lambda (x)
     (transcript0
       (with-output-to-string (lambda () (pretty-print-port x))))))
 
+(define pretty-print  
+ (case-lambda
+    [(o p)
+     (unless (and (output-port? p) (textual-port? p))
+       ($oops 'display "~s is not a textual output port" p))
+     (pretty-print-port o p)]
+    [(o) (pretty-print-transcript o)]))
+
+(define display-statistics
+ (case-lambda
+    [(p)
+     (unless (and (output-port? p) (textual-port? p))
+       ($oops 'display "~s is not a textual output port" p))
+     (display-statistics-print-port  p)]
+    [() (display-statistics-transcript)]))
+	  
+(define printf 
+ (case-lambda
+    [(p x o)
+     (unless (and (output-port? p) (textual-port? p))
+       ($oops 'display "~s is not a textual output port" p))
+     (printf-print-port p x o)]
+    [(x o) (printf-print-transcript x o)]))
+	  
 (define display-port display)
 
 (define newline-port newline)
@@ -126,9 +161,10 @@
 (define eval->string
   (lambda (x)
     (define os (open-output-string))
-	(trace-output-port os)
-	(console-output-port os)
-	(console-error-port os)
+	(define op (open-output-string))
+	(trace-output-port op)
+	(console-output-port op)
+	(console-error-port op)
     (try (begin
            (let* ([is (open-input-string x)])
              (let ([expr (read is)])
@@ -142,7 +178,9 @@
                               (lambda (p) (display-condition c p)))))))
                  (newline os)
                  (set! expr (read is)))))
-           (evalrespond (get-output-string os)))
+           (evalrespond (get-output-string os))
+		   (transcript0 (get-output-string op))
+		   )
          (catch
            (lambda (c)
              (println
