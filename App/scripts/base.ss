@@ -1,6 +1,39 @@
 ﻿;; base script
 ;; loads first; contains essentials only.
 
+
+;; The debugger is too terminal oriented.
+(debug-on-exception #f)
+
+;; when escape is pressed ctrl/c is 
+;; simulated; that fires this handler
+;; which uses the timer to raise
+;; escape pressed shortly; when it is safe to do so.
+;; (see added-to-schsig.c)
+
+(keyboard-interrupt-handler 
+  (lambda ()
+  (define escape-pressed!
+	 (lambda ()
+	  (raise
+	   (condition
+		 (make-error)
+		 (make-message-condition "Escape pressed")))))
+   (transcript0 "**ctrl/c**") 
+   (newline-transcript)
+   (timer-interrupt-handler
+   (lambda ()
+	(set-timer 0)
+	(escape-pressed!)))
+   (set-timer 20)))
+	
+
+(break-handler
+  (lambda ()
+	(transcript0 "**reset on break**")
+	(newline-transcript)))
+
+
 (define gc
   (lambda ()
     (collect)
@@ -68,7 +101,6 @@
 (define set-input-ed
   (lambda (s)
     ((foreign-procedure "setInputed" (string) void) s)))
-
 
 (define display-statistics-print-port display-statistics) 
 
@@ -165,6 +197,7 @@
 	(trace-output-port op)
 	(console-output-port op)
 	(console-error-port op)
+	(enable-interrupts)
     (try (begin
            (let* ([is (open-input-string x)])
              (let ([expr (read is)])

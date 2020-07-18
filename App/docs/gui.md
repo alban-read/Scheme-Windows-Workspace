@@ -104,77 +104,34 @@ This editor has the sort of retro commands you might expect from a 1990s windows
 
  
 
-------
-
-#### Keys in the text panes
-
-The text panes I believe like a normal windows app.
-
-**Arrow keys** move the cursor; most keys insert a character at the cursor.
-
-**ctrl-d** duplicates the current line.
-
-**pageup pagedown** move up and down the pane.
-
-**home end** move to start and end of lines.
-
-**shift-end** selects a line
-
-**ctrl-home ctrl-end** move to start and end of text.
-
-**ctrl-shift-home ctrl-shift-end** move to start or end of text; and select it.
-
-**ctrl-arrow** will jump along the line.
-
-**ctrl-shift-arrow** will jump along the line; selecting.
-
-**tab** moves right 4 spaces.
-
-**insert** switches between insert and overtype modes; cursor changes.
-
-**delete**  deletes forward
-
-**backspace** deletes back
-
-**shift-return** evaluates the selection
-
-**ctrl-return** evaluates the pane.
-
 ---
 
 
 
 ## <a name="the-escape-key">Escape key handler </a>
 
-*Be mindful; that some code can run away; and never stop; which will require you to kill the app.*
+*Be mindful; that some code can run away; and never stop; which may require you to kill the app.*
 
-If you run a script you may want to also interrupt it early.
+The app now simulates <control><c> when escape is pressed; in a fairly convoluted way; that required an extra function to be added to the scheme code and use of the timer.
+
+If you run a script you may want to interrupt it early.
 
 - The Terminal responds to <ctrl>+<c> signals; so you can interrupt any running function.
-- I would very much like to send that same interrupt to the engine when escape is pressed which would solve some problems below; if you know how to do that; please let me know.
-- Meanwhile library and user code *should check for the escape key*.
+- library and user code *can check for the escape key*.
 
-You need to add a check for the escape key into any loops you write in your scripts.
+You can add a check for the escape key into any loops you write in your scripts.
 
 For example this is an infinite loop; that will start to count up to infinity; not a good thing to tell a computer to do.
 
 ```scheme
-; !!! do not run this. it never ends.
-!(let loop ((i 1))
+; Never ending code
+(let loop ((i 1))
   (display (number->string i)) 
   (newline)
   (loop (+ 1 i)))
 ```
 
-If you run this is in a terminal you could hit <control><c> and it would stop.
-
-However this will run *in the app for ever*; since killing a running thread is a very bad thing to do; as it will often just lead to a subsequent crash. 
-
-This example is especially bad; as it uses the scheme engines thread and also overwhelms the application by sending infinite messages to the transcript pane.
-
-Usually the workspace is not impacted by a run away script but in this case it would be.
-
-To avoid never ending scripts from running away I often need to add an escape key check to any functions that might repeat forever.
+To avoid never ending scripts from running away I often add an escape key check to any functions that might repeat forever.
 
 ```scheme
 (when (escape-pressed?) (raise "Escape Key!"))
@@ -190,12 +147,16 @@ So we have :-
   (loop (+ 1 i)))
 ```
 
-The predefined **dotimes** and **while** commands already check for escape; and a for loop is not infinite. A pattern with scheme is to use explicit recursion for all loops; that pattern make this hazard more likely; remember to add this to your code if you want it to be interruptible.
+The predefined **dotimes** and **while** commands already check for escape; and a for loop is not infinite. 
+
+A pattern with scheme is to use explicit recursion for all loops; that pattern make this hazard more likely; remember to add this to your code if you want it to be interruptible.
 
 ```scheme
 (when (escape-pressed?) (raise "Escape Key!"))
 ```
 
  
+
+
 
  [Index](Readme.html)  

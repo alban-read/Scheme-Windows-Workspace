@@ -34,6 +34,10 @@ Zoom in and out with **ctrl-mouse scroll**
 
 **backspace** deletes back
 
+**escape** safely attempt to stop a running script
+
+**ctrl-break**  unsafely attempt to stop a running script; may break the app.
+
 ## Keys in the browser panes
 
 **alt-left-arrow**  - goes back
