@@ -1,4 +1,4 @@
-# Workspace - text; browser; and image panes
+# Workspace - tiles
 
  [Index](Readme.html)  
 
@@ -6,11 +6,13 @@
 
 ### <a name="the-gui">The workspace</a>
 
-The app creates a tiled workspace; full of text panes.
+Provides a tiled workspace; based on three text panes; a graphics pane; and an html pane.
 
-This is an alternative way to work interactively compared to a terminal.
+The tiled panes can be rearranged into a few common arrangements using the Docking menu.
 
-Assuming a default layout; generally you enter an expression in the top evaluator pane; execute the expression;  get the results of the response in lower pane; and any printouts in the transcript to the right.
+Assuming a default layout; you enter an expression in the top evaluator pane.
+
+When you execute the expression the results are displayed in the lower pane; any output is printed on the transcript to the right.
 
 The script, its results and its output are separated. 
 
@@ -20,15 +22,27 @@ You can select any expression you want to run; and press **shift+return** to run
 
 Or you can run the entire view; using **control+return**.
 
+The text panes support drag and drop; you can drag a scheme script file for example into a pane.  You can also drag in selected text.
+
+Scheme scripts are syntax highlighted and brackets are matched.
+
+
+
+**Not a file editor**
+
+- The tiles are not backed to a file anywhere; they are for interacting with Scheme.
+- They are also cleared when you re-arrange the layout using the docking menu.
+- When working I typically test functions in the evaluator pane; while adding them to a file open in an editor. I use notepad++.
+
+
+
 ### <a name="browser-pane">The browser pane</a>
 
-This is a browser view  in a pane it is the default Windows browser control; which is typically based on IE11; I believe.
+This pane exists for application documentation (such as this document.)
 
-This pane exists for application documentation (such as this document) as an HTML viewer.
+Selecting some text and pressing **shift-return** in the browser pane evaluates the selection.
 
-Selecting some text and pressing **shift-return** in the browser pane also evaluates the selection; just as in the text pane.
-
-This browser view is also quite programmable; I do not recommend doing that; there are better ways to drive a browser from scheme.  
+This browser view is fully programmable; I do not recommend taking advantage of this; there are better ways to drive a browser from scheme.  
 
  [Index](Readme.html)  
 
@@ -36,20 +50,17 @@ This browser view is also quite programmable; I do not recommend doing that; the
 
 #### <a name="image-pane">The image pane</a>
 
-This displays an image; created typically by the GDI+ based drawing functions.
+This displays an image; created typically by scripts using the GDI+ based drawing functions.
 
 This pane exists as way to interactively test scripts that draw 2D images.
 
-There are a couple of examples in the scripts folder; if you copy one and drop it onto the evaluator view it will draw a graphic.
+There are examples (fern, tree) in the scripts folder; if you drag and drop one onto the evaluator view; then evaluate it; they will draw a sample image.
 
 #### <a name="graphics-functions">Graphics functions</a>
 
-Use the GDI++ library; which is a 2D software based; alpha blending graphics library; perhaps some day Microsoft will open source it; and someone can improve it. 
+Use the GDI+ library; a software based; alpha blending graphics library.
 
-- Use Image Layout and an image view will be displayed; your graphics commands will be displayed there.
-- You can drag and drop an example from the scripts folder onto the Evaluator view; such as drawtree.ss which will draw a tree shape when evaluated. 
-
-The idea here is not really to draw ferns and trees; I use this to create graphs and charts.
+- Use Image Layout to display the graphics pane; your graphics commands will be displayed there.
 
  [Index](Readme.html)  
 
@@ -97,7 +108,7 @@ This editor has the sort of retro commands you might expect from a 1990s windows
 
 #### Keys in the text panes
 
-Behave I believe like a normal windows app.
+The text panes I believe like a normal windows app.
 
 **Arrow keys** move the cursor; most keys insert a character at the cursor.
 
@@ -157,9 +168,13 @@ For example this is an infinite loop; that will start to count up to infinity; n
 
 If you run this is in a terminal you could hit <control><c> and it would stop.
 
-However this will run *in the app for ever*; since killing a running thread is a very bad thing to do; as it will often just lead to a subsequent crash. So the app chooses not to kill it.
+However this will run *in the app for ever*; since killing a running thread is a very bad thing to do; as it will often just lead to a subsequent crash. 
 
-For that reason we often need to add an escape key check to any functions that might repeat forever.
+This example is especially bad; as it uses the scheme engines thread and also overwhelms the application by sending infinite messages to the transcript pane.
+
+Usually the workspace is not impacted by a run away script but in this case it would be.
+
+To avoid never ending scripts from running away I often need to add an escape key check to any functions that might repeat forever.
 
 ```scheme
 (when (escape-pressed?) (raise "Escape Key!"))
@@ -175,9 +190,7 @@ So we have :-
   (loop (+ 1 i)))
 ```
 
-For the shell application only:-
-
-The defined **dotimes** and **while** commands already check for escape; and a for loop is not infinite anyway. The trend with scheme to use recursion for all loops; does make this hazardous; remember to add this to your code if you want it to be interruptible.
+The predefined **dotimes** and **while** commands already check for escape; and a for loop is not infinite. A pattern with scheme is to use explicit recursion for all loops; that pattern make this hazard more likely; remember to add this to your code if you want it to be interruptible.
 
 ```scheme
 (when (escape-pressed?) (raise "Escape Key!"))
