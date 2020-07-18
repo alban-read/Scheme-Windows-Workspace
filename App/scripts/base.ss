@@ -126,6 +126,9 @@
 (define eval->string
   (lambda (x)
     (define os (open-output-string))
+	(trace-output-port os)
+	(console-output-port os)
+	(console-error-port os)
     (try (begin
            (let* ([is (open-input-string x)])
              (let ([expr (read is)])
@@ -149,6 +152,9 @@
 (define eval->text
   (lambda (x)
     (define os (open-output-string))
+	(trace-output-port os)
+	(console-output-port os)
+	(console-error-port os)
     (try (begin
            (let* ([is (open-input-string x)])
              (let ([expr (read is)])
@@ -161,7 +167,7 @@
            (transcript0 (get-output-string os)))
          (catch (transcript0 (string-append "\r\n error: "))))))
 
- 
+;; optional from here on down
 
 ;;; used to format text
 
