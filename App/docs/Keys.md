@@ -34,9 +34,9 @@ Zoom in and out with **ctrl-mouse scroll**
 
 **backspace** deletes back
 
-**escape** safely attempt to stop a running script
+**escape** safely attempts to stop a running script
 
-**ctrl-break**  unsafely attempt to stop a running script; may break the app.
+(May not succeed if running the unmodified scheme DLLs)
 
 ## Keys in the browser panes
 

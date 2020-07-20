@@ -11,22 +11,20 @@
 ;; escape pressed shortly; when it is safe to do so.
 ;; (see added-to-schsig.c)
 
-(keyboard-interrupt-handler 
+(keyboard-interrupt-handler
   (lambda ()
-  (define escape-pressed!
-	 (lambda ()
-	  (raise
-	   (condition
-		 (make-error)
-		 (make-message-condition "Escape pressed")))))
-   (transcript0 "**ctrl/c**") 
-   (newline-transcript)
-   (timer-interrupt-handler
-   (lambda ()
-	(set-timer 0)
-	(escape-pressed!)))
-   (set-timer 20)))
-	
+    (define escape-pressed!
+      (lambda ()
+        (raise
+          (condition
+            (make-error)
+            (make-message-condition "Escape pressed")))))
+    (transcript0 "**ctrl/c**")
+    (newline-transcript)
+    (timer-interrupt-handler
+      (lambda () (set-timer 0) (escape-pressed!)))
+    (set-timer 20)))
+ 
 
 (break-handler
   (lambda ()
@@ -35,12 +33,9 @@
 
 
 (define gc
-  (lambda ()
-    (collect)
-    (collect)
-    (collect)
-    (collect)))
- (define >0 (lambda (x) (> x 0)))
+  (lambda () (collect) (collect) (collect) (collect)))
+  
+(define >0 (lambda (x) (> x 0)))
  
 (define full-path
  (lambda (path) 
@@ -55,17 +50,20 @@
   (syntax-rules ()
     [(_ n body ...)
      (let loop ([i n])
-       (when (and (< 0 i) (not (escape-pressed?)))
+       (when (< 0 i)
          body
          ...
          (loop (- i 1))))]))
 
 (define-syntax while
   (syntax-rules ()
-    [(while test body ...)
+    ((while condition body ...)
      (let loop ()
-       (if (and (not (escape-pressed?)) test)
-           (begin body ... (loop))))]))
+       (if condition
+           (begin
+             body ...
+             (loop))
+           #f)))))
 
 (define-syntax for
   (syntax-rules (for in to step)
@@ -102,50 +100,52 @@
   (lambda (s)
     ((foreign-procedure "setInputed" (string) void) s)))
 
-(define display-statistics-print-port display-statistics) 
-
-(define pretty-print-port pretty-print)
-
-(define printf-print-port printf)
+(define printf-actual printf)
 
 (define printf-print-transcript
   (lambda (x o)
     (transcript0
-      (with-output-to-string (lambda () (printf-print-port x o))))))
-
-(define display-statistics-transcript
-  (lambda ()
-    (transcript0
-      (with-output-to-string (lambda () (display-statistics-print-port))))))
-
-(define pretty-print-transcript
-  (lambda (x)
-    (transcript0
-      (with-output-to-string (lambda () (pretty-print-port x))))))
-
-(define pretty-print  
- (case-lambda
-    [(o p)
-     (unless (and (output-port? p) (textual-port? p))
-       ($oops 'display "~s is not a textual output port" p))
-     (pretty-print-port o p)]
-    [(o) (pretty-print-transcript o)]))
-
-(define display-statistics
- (case-lambda
-    [(p)
-     (unless (and (output-port? p) (textual-port? p))
-       ($oops 'display "~s is not a textual output port" p))
-     (display-statistics-print-port  p)]
-    [() (display-statistics-transcript)]))
+      (with-output-to-string (lambda () (printf-actual x o))))))
 	  
 (define printf 
  (case-lambda
     [(p x o)
      (unless (and (output-port? p) (textual-port? p))
-       ($oops 'display "~s is not a textual output port" p))
-     (printf-print-port p x o)]
+       (errorf 'display "~s is not a textual output port" p))
+     (printf-actual p x o)]
     [(x o) (printf-print-transcript x o)]))
+	
+(define pretty-actual pretty-print)
+
+(define pretty-print-transcript
+  (lambda (x)
+    (transcript0
+      (with-output-to-string (lambda () (pretty-actual x))))))
+
+(define pretty-print  
+ (case-lambda
+    [(o p)
+     (unless (and (output-port? p) (textual-port? p))
+       (errorf 'display "~s is not a textual output port" p))
+     (pretty-actual o p)]
+    [(o) (pretty-print-transcript o)]))
+
+
+(define display-statistics-actual display-statistics) 
+
+(define display-statistics-transcript
+  (lambda ()
+    (transcript0
+      (with-output-to-string (lambda () (display-statistics-actual))))))
+	  
+(define display-statistics
+  (case-lambda
+    [(p)
+     (unless (and (output-port? p) (textual-port? p))
+       (errorf 'display "~s is not a textual output port" p))
+     (display-statistics-actual p)]
+    [() (display-statistics-transcript)]))
+	  
 	  
 (define display-port display)
 
@@ -158,11 +158,19 @@
 
 (define newline-transcript (lambda () (display-transcript #\newline)))
 
+(define apropos-print apropos)
+	
+(define apropos
+	(lambda (x) 
+		 (transcript0
+			(with-output-to-string (lambda () (apropos-print x))))))
+	
+
 (define display
   (case-lambda
     [(x p)
      (unless (and (output-port? p) (textual-port? p))
-       ($oops 'display "~s is not a textual output port" p))
+       (errorf 'display "~s is not a textual output port" p))
      (display-port x p)]
     [(x) (display-transcript x)]))
 
@@ -172,7 +180,7 @@
   (case-lambda
     [(p)
      (unless (and (output-port? p) (textual-port? p))
-       ($oops 'display "~s is not a textual output port" p))
+       (errorf 'display "~s is not a textual output port" p))
      (newline-port p)]
     [() (newline-transcript)]))
 
@@ -193,11 +201,11 @@
 (define eval->string
   (lambda (x)
     (define os (open-output-string))
-	(define op (open-output-string))
-	(trace-output-port op)
-	(console-output-port op)
-	(console-error-port op)
-	(enable-interrupts)
+    (define op (open-output-string))
+    (trace-output-port op)
+    (console-output-port op)
+    (console-error-port op)
+    (enable-interrupts)
     (try (begin
            (let* ([is (open-input-string x)])
              (let ([expr (read is)])
@@ -212,8 +220,7 @@
                  (newline os)
                  (set! expr (read is)))))
            (evalrespond (get-output-string os))
-		   (transcript0 (get-output-string op))
-		   )
+           (transcript0 (get-output-string op)))
          (catch
            (lambda (c)
              (println
@@ -238,7 +245,7 @@
            (transcript0 (get-output-string os)))
          (catch (transcript0 (string-append "\r\n error: "))))))
 
-;; optional from here on down
+ 
 
 ;;; used to format text
 
@@ -250,7 +257,7 @@
              (let ([expr (read is)])
                (while
                  (not (eq? #!eof expr))
-                 (try (begin (pretty-print-port expr os))
+                 (try (begin (pretty-actual expr os))
                       (catch
                         (lambda (c)
                           (println
@@ -270,12 +277,32 @@
 				 
 ;;;
 
+(define set-windows-layout
+  (lambda (n)
+    ((foreign-procedure "WindowLayout" (int) ptr) n)))
+
+(define set-repaint-timer
+  (lambda (n)
+    ((foreign-procedure "set_repaint_timer" (int) ptr) n)))
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; simple graphics (some gdi plus commands)
 
-(define show
+(define update-graphics
   (lambda (n)
     ((foreign-procedure "graphicsUpdate" (int) ptr) n)))
+	
+	
+(define activate-graphics
+  (lambda ()
+    ((foreign-procedure "graphicsActivate" () ptr))))
+	
+(define show 
+(lambda () 
+	(gswap 1)
+	(update-graphics 0)))
 
 (define clr
  (lambda (x y)
@@ -470,6 +497,11 @@
    ((foreign-procedure "QUALITYANTIALIAS"
     () ptr))))
 
+(define gswap
+ (lambda (n)
+   ((foreign-procedure "GSWAP"
+    (int) ptr) n )))
+
 (define gflip
  (lambda (m)
    ((foreign-procedure "FLIP"
@@ -510,6 +542,88 @@
  (lambda (x y a)
    ((foreign-procedure "MATRIXROTATEAT"
     (int int float) ptr) x y a )))
+	
+;; dangerous use of void* to bitmaps and images follows.
+	
+(define clone-resized-bitmap
+ (lambda (b w h )
+   ((foreign-procedure "RESIZEDCLONEDBITMAP"
+    (void* int int) void*) b w h)))	
+	
+(define clone-resized-image
+ (lambda (i w h )
+   ((foreign-procedure "RESIZEDCLONEIMAGE"
+    (void* int int) void*) i w h)))		
+	
+(define clone-rotated-image
+ (lambda (a i)
+   ((foreign-procedure "ROTATEDCLONEDIMAGE"
+    (int  void*) void*) a i)))	
+	
+(define draw-image
+ (lambda (i x y )
+   ((foreign-procedure "IMAGETOSURFACE"
+    (void* int int) ptr) i x y)))			
+	
+(define draw-rotated-image
+ (lambda (a i x y )
+   ((foreign-procedure "ROTATEDIMAGETOSURFACE"
+    (void*  int int int) ptr) a i x y)))			
+	
+(define draw-scaled-image
+ (lambda (s i x y )
+   ((foreign-procedure "SCALEDIMAGETOSURFACE"
+    (int void* int int) ptr) s i x y)))			
+		
+(define draw-scaled-rotated-image
+ (lambda (s a i x y )
+   ((foreign-procedure "SCALEDROTATEDIMAGETOSURFACE"
+    (int int void*  int int) ptr) s a i x y)))	
+
+(define load-to-background
+ (lambda (f x y )
+   ((foreign-procedure "LOADTOSURFACE"
+    (string int int) ptr) f x y)))	
+
+(define free-bitmap
+ (lambda (b)
+   ((foreign-procedure "FREESURFACE"
+    (void*) ptr) b)))		
+	
+(define free-image
+ (lambda (b)
+   ((foreign-procedure "FREEIMAGE"
+    (void*) ptr) b)))		
+	
+
+(define activate-bitmap
+ (lambda (b)
+   ((foreign-procedure "ACTIVATESURFACE"
+    (void*) ptr) b)))		
+
+(define make-new-bitmap
+ (lambda (w h)
+   ((foreign-procedure "MAKESURFACE"
+    (int int) void*) w h)))	
+	
+(define load-image
+ (lambda (f )
+   ((foreign-procedure "LOADIMAGE"
+    (string) void*) f)))	
+
+(define get-background
+ (lambda ()
+   ((foreign-procedure "get_surface"
+    () void*) )))	
+
+;; used to track keys in graphics window
+(define graphics-keys
+ (lambda ()
+   ((foreign-procedure "graphics_keys"
+    () ptr))))
+	
+
+	
 	
 ;;; simple browser pane
 ;; please just use this for docs

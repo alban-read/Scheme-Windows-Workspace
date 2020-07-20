@@ -1,5 +1,7 @@
 ;; draw a tree in the image view.
 ;; based on example from rosetta code.
+;; draw a tree in the image view.
+;; based on example from rosetta code.
 
 (define draw-tree
  (lambda ()
@@ -25,7 +27,6 @@
 ;;  
     (define draw-a-line 
         (lambda (x y x1 y1 s) 
-        (if (= 1 (random 4)) (show 0 )) ;; watch lines
           (pen-width (exact->inexact s))
           (draw-line 
             (inexact->exact (round x))
@@ -40,11 +41,7 @@
     (colour 80 200 80 255)
     (paper 15 90 120 255)
     (clr 640 520) 
-    (show 1)
-
-
-
     (map get-line tree)
-    (show 2)))
+	(show)))
 ;;
 (draw-tree)

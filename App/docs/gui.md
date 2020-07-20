@@ -26,7 +26,7 @@ The text panes support drag and drop; you can drag a scheme script file for exam
 
 Scheme scripts are syntax highlighted and brackets are matched.
 
-
+[Keys](keys.html)
 
 **Not a file editor**
 
@@ -112,14 +112,28 @@ This editor has the sort of retro commands you might expect from a 1990s windows
 
 *Be mindful; that some code can run away; and never stop; which may require you to kill the app.*
 
-The app now simulates <control><c> when escape is pressed; in a fairly convoluted way; that required an extra function to be added to the scheme code and use of the timer.
+The app now simulates a user typing control-c into a terminal when the escape is pressed.
 
-If you run a script you may want to interrupt it early.
+It needs to do this in a fairly convoluted way; that required an extra function to be added to the scheme code and use of the scheme timer.
 
-- The Terminal responds to <ctrl>+<c> signals; so you can interrupt any running function.
-- library and user code *can check for the escape key*.
+As Scheme runs; at safe points; it checks to see if there are any error conditions; the in-scheme escape key handler works by politely creating a keyboard interrupt that interrupt is defined to sets a timer that raises an escape key pressed error; safely in a few cycles time.
 
-You can add a check for the escape key into any loops you write in your scripts.
+In this way we avoid intervening in normal code execution in a way that usually causes a crash.
+
+In addition another escape key watcher runs in-app.
+
+This in-app watcher will drain the script queue of any pending requests.
+
+The combined effect of both watchers is to :-
+
+- Cancel any pending work in the queue.
+- Cancel any running task.
+
+
+
+**Checking the escape key status**
+
+You can also if you wish add a third level of checks for the escape key into any loops you write in your scripts.
 
 For example this is an infinite loop; that will start to count up to infinity; not a good thing to tell a computer to do.
 
@@ -131,7 +145,7 @@ For example this is an infinite loop; that will start to count up to infinity; n
   (loop (+ 1 i)))
 ```
 
-To avoid never ending scripts from running away I often add an escape key check to any functions that might repeat forever.
+To avoid never ending scripts from running away you can add an escape key check to any functions that might repeat forever.
 
 ```scheme
 (when (escape-pressed?) (raise "Escape Key!"))
@@ -147,16 +161,6 @@ So we have :-
   (loop (+ 1 i)))
 ```
 
-The predefined **dotimes** and **while** commands already check for escape; and a for loop is not infinite. 
-
-A pattern with scheme is to use explicit recursion for all loops; that pattern make this hazard more likely; remember to add this to your code if you want it to be interruptible.
-
-```scheme
-(when (escape-pressed?) (raise "Escape Key!"))
-```
-
- 
-
-
+This user side check is useful if you decide to use unmodified Chez Scheme DLLS.
 
  [Index](Readme.html)  

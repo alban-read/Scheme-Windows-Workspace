@@ -34,8 +34,9 @@ The R6RS core of the Chez Scheme language is described in [The Scheme Programmin
 
 Keeping up to date
 
-- The version of scheme used; is unmodified; I use the Chez Scheme windows binary installer to provide the lib and dll files this links to; no part of that code is changed.
-- Each major c++ library comes in from vcpkg a Microsoft c++ package manager; the set of packages for some versions of this app are many gigabytes in size; the package manager keeps them all up to date.
+- The version of scheme (kernel and boot files) used; can be unmodified; the app will work with the DLLS from the Chez Scheme windows binary installer.
+  - The version included has had two functions added to the kernel to translate the escape key into a control/c interrupt.
+-  vcpkg a Microsoft c++ package manager is used for other library code.
 - There are solutions for the C++ projects that run in Visual Studio 2017-2019; they assume vcpkg exists .
 
 
@@ -44,9 +45,9 @@ Keeping up to date
 
 The workspace app is written in C++ using the Win32cpp library.
 
-This adds human oriented interactive IO to the Scheme engine; which otherwise uses a terminal.
+This adds human oriented interactive I/O to the Scheme engine; which otherwise uses a terminal.
 
-The App provides views as arrangeable panes or tiles for text, graphics, html.
+The App provides views as arrangeable panes or tiles for text, graphics, documentation views.
 
 And connects to Scheme
 
@@ -58,11 +59,17 @@ In the real world I tend to link in DLLs from other C libraries and create schem
 
 When doing that you can use Scheme either as a way of automating C++ functions; or you can regard the C++ app as a number of functions that act as extensions  to Scheme.
 
-A program is either a Script in Scheme or a C++ application with Scheme scripting.
+A program is either a Script in Scheme or a C++ application with Scheme scripting; either view works.
 
 ##### Composition of the app
 
 This App uses Win32cpp a Win32 library (it is 64 bit; the 32 is the name of the Windows API); this App includes only view related things; like the scintilla text editor; the GDI+ graphics pane; and the windows browser pane.
+
+Chez Scheme designed for the terminal; is composed of an application; a shared library kernel; and boot files (containing compiled scheme code and data.)
+
+This application replaces the windows console exe; with a windows GUI exe; keeping the shared library kernel and boot files; to run the Scheme compiling interpreter.
+
+Some challenges are that the kernel and boot file code; still think they are running in a terminal; so various streams need to be redirected; keyboard interrupts are awkward; interactive debugger and expeditor are not supported (yet) and so on.
 
 ##### binding to engine
 
@@ -72,8 +79,10 @@ The scheme engine is linked in directly and called on a thread; functions have b
 
 As each scheme expression is invoked; a call is made to scheme on a scheme thread.
 
-- Only a single scheme thread is active running a single function; that function may be an entire program of course.
+- Only a single scheme thread is active.
+- The Scheme script from the evaluation pane is sent to the Scheme thread.
 - The App has several of its own threads; so you can carry on editing while scheme runs the latest expression.
+- A queue of expressions may build up for the scheme thread.
 
 ##### Garbage collection in the App
 
@@ -156,11 +165,11 @@ Some of the functions in this code; are fairly old C code; and some use quite ne
 
 None the less it is not hard to compile this App; using the visual studio solution. 
 
-It can be harder to link in all the dependencies; the good news is that I am deliberately using library code that is all available in vcpkg (the c++ package management system.) I hope  this means there will no longer be a dozen versions of zlib built into this one app.
+It can be harder to link in all the dependencies; the good news is that I choose only library code that is available in vcpkg .
 
-You need to install vpckg; download and compile a couple of libraries; (re2, scilexer) and visual studio will find it.
+You need to install vpckg; download and compile a couple of libraries; (re2, scilexer, fmt) and visual studio will find it.
 
-To compile scheme; you need scheme; but all the scheme parts; can be taken directly from the Windows binary Chez Scheme installer; I am using the non threaded x64 version; the Scheme parts are completely unmodified. 
+To compile scheme; you need scheme; all the scheme parts; can be taken directly from the Windows binary Chez Scheme installer; I am using the non threaded x64 version; the Scheme parts can be completely unmodified; however the version shipped has a change to catch the escape key.
 
 #### Supporting more threads
 
@@ -176,13 +185,13 @@ Obviously we can run more than one process; the scheme.exe file can run scripts;
 
 #### The ecological imperative for using C++ and Lisp
 
-Stop killing the planet by running your `dog slow interpreters`; on cloud computing super clusters.
+Stop killing the planet by running dog slow interpreters on cloud computing super clusters.
 
 ![](environmentalism.png)
 
 
 
-
+Or if you are in business 'stop wasting money.'
 
 ------
 
@@ -194,16 +203,26 @@ Stop killing the planet by running your `dog slow interpreters`; on cloud comput
 
 July 2020 minimal edition.
 
--  Ripped out reams of library code; including a giant DLL glue library.
+-  Tidied up a bit.
+-  Ripped out reams of library code; including a giant DLL glue library full of things only I am interested in.
+-  Redirected more functions that expect a terminal (tracing, timing, statistics.)
+-  Use one persistent scheme thread and a queue; instead of re-creating the thread.
+-  Added escape key termination DLL side.
 
-Latest version of Cisco Chez Scheme 9.5.3
+Latest version of Cisco Chez Scheme is 9.5.3
 
 - This app has been tested and built on Windows 10 versions *from the future*.
-- Using computer languages from the past
+- Using computer languages from the past.
 
 **Performance**
 
 Cisco Chez Scheme is the products of decades of work; and has a fast optimizing nano-pass-compiler; that converts a scheme library to fast machine code.
+
+The best speed comes from the use of compiled scheme library code; see the user guide; linked from the help page.
+
+Even scheme that is just evaluated at the top level is very fast.
+
+
 
 <https://github.com/cisco/ChezScheme>
 
@@ -215,9 +234,7 @@ The time function shown above only works in the terminal.
 
 The App notes the time; the last command took to run; on the right of the status bar.
 
- 
-
-
+ You can also use the scheme time function to time a function.
 
 
 

@@ -75,10 +75,12 @@ You can interactively create images and display them in the viewer.
     (colour 0 200 0 255)
     (paper 0 0 0 255)
     (clr 500 500)
-    (show 0)))
+    (show)))
 ;;
 (define fern
-  (lambda () (dotimes 100 (transform) (draw-point)) (show 0)))
+  (lambda () 
+    (dotimes 100 
+      (transform) (draw-point)) (show)))
 ;;
 (init)
 ;; select and shift-return
@@ -133,7 +135,7 @@ Set the paper colour to an r,g,b,a (red,green,blue,alpha) value; then create a b
 ```scheme
 (paper 40 140 240 255) ;; paper color r,g,b, alpha
 (clr 640 320) ;; clear 640x320 image		
-(show 0) ;; show on screen
+(show) ;; show on screen
 ```
 
 Or set the gradient brush then create the blank image
@@ -147,7 +149,7 @@ Or set the gradient brush then create the blank image
  #t)
 ;;
 (clrg 640 320)	;; clear with gradient
-(show 0)
+(show)
 ```
 
 To re-display a changed image on the image view
@@ -155,7 +157,7 @@ To re-display a changed image on the image view
 The parameter for show (0-3) sends the update message to different parts of the application window; forcing more or less of the screen to refresh.
 
 ```scheme
-(show 0) ;; show the image
+(show) ;; show the image
 ```
 
 ------
@@ -201,7 +203,7 @@ A line has a colour and a pen width
 (colour 0 200 0 255) ;; green 
 (pen-width 2.2)	   ;; wide line	
 (draw-line 10 10 200 200) ;; draw a line
-(show 0)
+(show)
 ```
 
 #### Rectangle drawing
@@ -210,7 +212,7 @@ A line has a colour and a pen width
 (colour 200 0 200 255)  ;; purple
 (pen-width 3.5)	   ;; wide line	
 (draw-rect 10 10 40 40) ;; x,y, width height
-(show 0)
+(show)
 ```
 
 #### Ellipse Drawing
@@ -219,27 +221,33 @@ A line has a colour and a pen width
 (colour 0 0 200 255) ;; blue 
 (pen-width 0.5) ;; narrow line
 (draw-ellipse 10 10 50 50) ;; x,y, width, height
-(show 0)
+(show)
 ```
 
 #### Pie Drawing
 
 ```scheme
-(paper 40 140 240 255) ;; paper color r,g,b, alpha
-(clr 640 320) ;; clear 640x320 image		
+ ;; paper color r,g,b, alpha
+(paper 40 140 240 255)
+
+;; clear 640x320 image	
+(clr 640 320) 	
 (colour 0 200 200 255) ;; set colour
 (pen-width 8.0)
-(draw-pie 120 100 150 150 0 100) ;; x,y,width,height,start,end
-(show 0)
+;; x,y,width,height,start,end
+(draw-pie 120 100 150 150 0 100) 
+(show)
 ```
 
 #### Arc Drawing
 
 ```scheme
-(colour 200 100 200 255) ;; set colour
+;; set colour
+(colour 200 100 200 255) 
 (pen-width 4.0)
-(draw-arc 10 10 150 150 0 100) ;; x,y,width,height,start,end
-(show 0)
+;; x,y,width,height,start,end
+(draw-arc 10 10 150 150 0 100)
+(show)
 ```
 
 ### Fill shapes
@@ -249,17 +257,21 @@ A shape has a solid fill brush or a gradient fill brush
 #### Fill Rectangle
 
 ```scheme
-(fill 100 0 100 255) ;; set solid fill brush color
-(fill-rect 100 100 50 50) ;; x,y,w,h
-(show 0)
+;; set solid fill brush color
+(fill 100 0 100 255) 
+;; x,y,w,h
+(fill-rect 100 100 50 50)
+(show)
 ```
 
 #### Fill Ellipse
 
 ```scheme
-(fill 10 100 100 255) ;; set solid fill brush color
-(fill-ellipse 100 100 120 120) ;; x,y,w,h
-(show 0)
+;; set solid fill brush color
+(fill 10 100 100 255) 
+ ;; x,y,w,h
+(fill-ellipse 100 100 120 120)
+(show)
 
 ```
 
@@ -268,9 +280,10 @@ A circle is an ellipse; were w and h are the same.
 #### Fill Pie
 
 ```scheme
-(fill 100 0 100 255) ;; set solid fill brush color
+;; set solid fill brush color
+(fill 100 0 100 255) 
 (fill-pie 100 100 120 120) ;; x,y,w,h
-(show 0)
+(show)
 ```
 
 ### Fill with gradients
@@ -285,7 +298,7 @@ A circle is an ellipse; were w and h are the same.
  45.0 		   ;; angle
  #t )
 (gradient-rect 210 210 80 80) ;; x,y,w,h
-(show 0)
+(show)
 ```
 
 #### Gradient Fill Ellipse
@@ -299,7 +312,7 @@ A circle is an ellipse; were w and h are the same.
  #t )
 (draw-ellipse 300 100 120 120) ;; x,y,w,h
 (gradient-ellipse 300 100 120 120) ;; x,y,w,h
-(show 0)
+(show)
 ```
 
 #### Gradient Fill Pie
@@ -312,7 +325,7 @@ A circle is an ellipse; were w and h are the same.
  70.0 		   ;; angle
  #t )
 (fill-pie 100 100 120 120 90 180) ;; x,y,w,h,start, end
-(show 0)
+(show)
 ```
 
 ------
@@ -325,7 +338,7 @@ A circle is an ellipse; were w and h are the same.
 (fill 200 200 10 255)
 (font-size 30)
 (fill-string 20 20 "This is some text")
-(show 0)
+(show)
 ```
 
 To draw text onto the graphics image; set the fill colour; set the font size and the draw the string. Text is painted using a brush; hence fill string.
@@ -343,7 +356,7 @@ To draw text onto the graphics image; set the fill colour; set the font size and
  #t )
 (font-size 40)
 (gradient-string 30 30 "This is some text")
-(show 0)
+(show)
 ```
 
 ------
@@ -374,7 +387,7 @@ Draw some text with the default matrix
 (fill 200 200 10 255)
 (font-size 30)
 (fill-string 20 20 "This is some text")
-(show 0)
+(show)
 ```
 
 Try adding these transformations using the matrix commands
@@ -437,53 +450,76 @@ Mode 3 is handy when working on high DPI screens.
 #### Draw a tree
 
 ```scheme
-;; draw a tree in image view.
+;; draw a tree in the image view.
 ;; based on example from rosetta code.
+
 (define draw-tree
  (lambda ()
 ;;
-	(define *scale* 10) 
-	(define *split* 20)  
+    (define *scale* 10) 
+    (define *split* 20)  
 ;;
-	(define degrees->radians 
-	 (lambda (d)
-		(let [ (pi 3.1415926535897932384626433832795028841)]
-				(* d pi 1/180))))
+    (define degrees->radians 
+     (lambda (d)
+        (let [ (pi 3.1415926535897932384626433832795028841)]
+                (* d pi 1/180))))
 ;;
-	(define (create-tree x1 y1 angle depth)
-	  (if (zero? depth)
-		'()
-		(let ((x2 (+ x1 (* (cos (degrees->radians angle)) depth *scale*)))
-			  (y2 (- y1 (* (sin (degrees->radians angle)) depth *scale*))))
-		  (append (list (map truncate (list x1 y1 x2 y2 depth)))
-				  (create-tree x2 y2 (- angle *split*) (- depth 1))
-				  (create-tree x2 y2 (+ angle *split*) (- depth 1))))))
+    (define (create-tree x1 y1 angle depth)
+      (if (zero? depth)
+        '()
+        (let ((x2 (+ x1 (* (cos (degrees->radians angle)) depth *scale*)))
+              (y2 (- y1 (* (sin (degrees->radians angle)) depth *scale*))))
+          (append (list (map truncate (list x1 y1 x2 y2 depth)))
+                  (create-tree x2 y2 (- angle *split*) (- depth 1))
+                  (create-tree x2 y2 (+ angle *split*) (- depth 1))))))
 ;;
-	(define tree (create-tree 320 500 90 9))
-;;	
-	(define draw-a-line 
-		(lambda (x y x1 y1 s) 
-        (if (= 1 (random 4)) (show 0 )) ;; watch lines
-		  (pen-width (exact->inexact s))
-		  (draw-line 
-			(inexact->exact (round x))
-			(inexact->exact (round y))
-			(inexact->exact (round x1))
-			(inexact->exact (round y1)))))
+    (define tree (create-tree 320 500 90 9))
+;;  
+    (define draw-a-line 
+        (lambda (x y x1 y1 s) 
+          (pen-width (exact->inexact s))
+          (draw-line 
+            (inexact->exact (round x))
+            (inexact->exact (round y))
+            (inexact->exact (round x1))
+            (inexact->exact (round y1)))))
 ;;
-	(define get-line 
-	  (lambda (x) 
-		(apply draw-a-line x)))
+    (define get-line 
+      (lambda (x) 
+        (apply draw-a-line x)))
 ;;
-	(colour 80 200 80 255)
-	(paper 15 90 120 255)
-	(clr 640 520) 
-    (show 1)
+    (colour 80 200 80 255)
+    (paper 15 90 120 255)
+    (clr 640 520) 
     (map get-line tree)
-    (show 2)))
+	(show)))
 ;;
 (draw-tree)
 ```
 
 ------
+
+## Random Lines
+
+```Scheme
+;;
+(define random-lines
+  (lambda (n)
+    (dotimes n 
+      (show) 
+      (pen-width (+ 2.0 (random 6)))
+      (colour (random 255) (random 255) (random 255) 255)
+      (draw-line
+        (random 800)
+        (random 600)
+        (random 800)
+        (random 600)))))
+;;
+(paper 0 0 0 255)
+(clr 800 600)
+
+(random-lines 300)
+
+ 
+```
 
