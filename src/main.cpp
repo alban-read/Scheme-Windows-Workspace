@@ -41,12 +41,8 @@ using namespace Gdiplus;
 #include <Shlwapi.h>
 #pragma comment(lib, "shlwapi.lib")
  
-
 // reg exp support
-
 #pragma comment(lib, "re2.lib")
- 
- 
 
 #define CALL0(who) Scall0(Stop_level_value(Sstring_to_symbol(who)))
 #define CALL1(who, arg) Scall1(Stop_level_value(Sstring_to_symbol(who)), arg)
@@ -64,10 +60,7 @@ using namespace Gdiplus;
 #include <iostream>
 // strings
 #include <locale>
-#include <codecvt>
-
-
- 
+#include <codecvt> 
 #include "csv.h"
 #include <re2/re2.h>
 
@@ -91,8 +84,7 @@ using namespace Gdiplus;
 // IO streams
 #pragma comment(lib, "msvcprtd.lib")
  
-
-
+ptr every(int delay, int period);
 
 namespace Text {
 	extern ptr utf8_string_separated_to_list(char* s, const char sep);
@@ -130,8 +122,7 @@ extern "C" __declspec(dllexport) ptr EscapeKeyPressed()
 	return Sfalse;
 }
 
-
-extern "C" __declspec(dllexport) bool inGuiMode()
+extern "C"  bool inGuiMode()
 {
 	return launch_gui;
 }
@@ -187,8 +178,6 @@ extern "C" __declspec(dllexport) ptr QuitApplication()
 
  
 CDockContainerApp theApp;
-
-
 extern "C" {
 	void appendEditor(char* s);
 	void appendTranscript(char* s);
@@ -292,8 +281,6 @@ std::vector<std::string> split(const std::string& s, const char delim)
 	split(s, delim, std::back_inserter(elems));
 	return elems;
 }
-
-
 
 static LONG get_string_reg_key( HKEY h_key, const std::wstring& str_value_name, std::wstring& str_value,
                                const std::wstring& str_default_value)
@@ -579,7 +566,6 @@ void invoke_browser_license()
 	}
 
 }
-
 
 void invoke_browser_back()
 {
@@ -888,7 +874,6 @@ ptr read_title()
 	return s;
 }
 
-
 // run script in browser
 ptr exec_browser(char* script)
 {
@@ -955,8 +940,6 @@ char* get_browser_selection_text()
 	}
 	return s;
 }
-
-
 
 // call javascript function in browser
 // scheme list to function args; results of function to list.
@@ -1418,7 +1401,7 @@ ptr set_repaint_timer(const int n)
 char* get_this_path(char* dest, const size_t dest_size)
 {
 	if (!dest) return nullptr;
-	auto length = GetModuleFileNameA(nullptr, dest, dest_size);
+	GetModuleFileNameA(nullptr, dest, dest_size);
 	if (MAX_PATH > dest_size) return nullptr;
 	PathRemoveFileSpecA(dest);
 	return dest;
@@ -1476,7 +1459,7 @@ __declspec(dllexport) ptr GRACTIVATE()
 	return Strue;
 }
 
-
+// This so does not work; even slightly
 void redirect_io_to_console()
 {
 	// Create a console for this application
@@ -1529,8 +1512,6 @@ static void custom_init()
 }
 
 
-DWORD WINAPI  garbage_collect(LPVOID cmd);
-DWORD WINAPI  busy_indicator(LPVOID cmd);
 
 void register_boot_file(const char *boot_file, bool& already_loaded)
 {
@@ -1538,7 +1519,6 @@ void register_boot_file(const char *boot_file, bool& already_loaded)
 	char dest[maxpath];
 	get_this_path(dest, MAX_PATH + 80);
 	strcat_s(dest, boot_file);
-
 	if (!already_loaded &&
 		!(INVALID_FILE_ATTRIBUTES == GetFileAttributesA(dest) &&
 			GetLastError() == ERROR_FILE_NOT_FOUND))
@@ -1565,8 +1545,10 @@ void load_script_ifexists(const char* script_relative)
 DWORD WINAPI execstartup(LPVOID cmd);
 void abnormal_exit() 
 {
-	appendTranscript("scheme engine died.");
-	
+	MessageBox(nullptr,
+		L"The Scheme engine has died.",
+		L"Sorry to say ChezScheme has died and taken us with it.",
+		MB_OK | MB_ICONERROR);
 	exit(1);
 }
 
@@ -1574,16 +1556,11 @@ void abnormal_exit()
 // we are running ahead of the GUI opening
 DWORD WINAPI execstartup(LPVOID cmd)
 {
-
 	try
 	{
-
 		Sscheme_init(abnormal_exit);
-
 		bool register_petite = false;
 		bool register_cs = false;
-
-	
 		register_boot_file("\\boot\\petite.boot", register_petite);
 		register_boot_file("petite.boot", register_petite);
 		register_boot_file("\\boot\\scheme.boot", register_cs);
@@ -1601,7 +1578,6 @@ DWORD WINAPI execstartup(LPVOID cmd)
 
 
 		Sbuild_heap("DockContainer.exe", custom_init);
-
 		// export functions in this app so scheme can see them
 		// some shell functions
 		Sforeign_symbol("eval_respond", static_cast<void *>(appendEditor));
@@ -1631,21 +1607,20 @@ DWORD WINAPI execstartup(LPVOID cmd)
 		// set the window layout policy
 		Sforeign_symbol("WindowLayout", static_cast<ptr>(window_layout));
 		Sforeign_symbol("set_repaint_timer", static_cast<ptr>(set_repaint_timer));
-		
 		Sforeign_symbol("GetFullPath", static_cast<ptr>(GetFullPath));
 
 		_init_graphics();
 		Sforeign_symbol("graphics_keys", static_cast<ptr>(graphics_keys));
+
+		Sforeign_symbol("every", static_cast<ptr>(every));
  
 		// load scripts
 		load_script_ifexists("\\scripts\\base.ss");
 		load_script_ifexists("\\scripts\\init.ss");
-		
 		load_script_ifexists("\\scripts\\env.ss");
 
 		CALL1("suppress-greeting", Strue);
 		CALL1("waiter-prompt-string", Sstring(""));
-
 		load_script_ifexists("\\scripts\\browser.ss");
 		load_script_ifexists("\\scripts\\appstart.ss");
 
@@ -1655,14 +1630,12 @@ DWORD WINAPI execstartup(LPVOID cmd)
 		MessageBox(nullptr, e.GetText(), AtoT(e.what()), MB_ICONERROR);
 		return 0;
 	}
-
 	return 0;
 }
 // runs on initial update
 void post_gui_load_script()
 {
 	load_script_ifexists("\\scripts\\initialupdate.ss");
-
 }
 
 void start_com()
@@ -1691,16 +1664,13 @@ bool load_lexer()
 }
 
 extern __declspec(dllexport) HANDLE g_image_rotation_mutex;
- 
 int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
 	set_browser_feature_control();
- 
 	start_com();
  
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR gdiplusToken;
-
 	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
 
 	g_script_mutex = CreateMutex(nullptr, FALSE, nullptr);

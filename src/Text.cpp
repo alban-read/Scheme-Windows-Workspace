@@ -196,7 +196,7 @@ DWORD WINAPI  process_commands(LPVOID x)
 	ReleaseMutex(g_script_mutex);
 
 	int ticks = 0;
-
+	int pending_commands=0;
 	// now watch for scripts to run.
 	while (true) {
 
@@ -225,7 +225,7 @@ DWORD WINAPI  process_commands(LPVOID x)
 		}
 		WaitForSingleObject(g_commands_mutex, INFINITE);
 		std::string eval;
-		int pending_commands;
+		
 		if (!commands.empty()) {
 			eval = commands.front();
 			commands.pop_front();
@@ -244,8 +244,16 @@ DWORD WINAPI  process_commands(LPVOID x)
 				auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(0, L"Busy");
 			}
 			if (timing==true) {
+
 				auto t1 = ellapsed_seconds_since_starting();
-				CALL1("eval->string", Sstring(eval.c_str()));
+			
+				if (eval.c_str()[0] == 33) {
+					CALL0(&eval.c_str()[1]);
+				}
+				else {
+					CALL1("eval->string", Sstring(eval.c_str()));
+				}
+				
 				auto t2 = ellapsed_seconds_since_starting() - t1;
 				if (inGuiMode() &&
 					theApp.GetMainFrame().GetHwnd() != nullptr) {
@@ -254,7 +262,13 @@ DWORD WINAPI  process_commands(LPVOID x)
 				}
 			}
 			else {
-				CALL1("eval->string", Sstring(eval.c_str()));
+
+				if (eval.c_str()[0] == 33) {
+					CALL0(&eval.c_str()[1]);
+				}
+				else {
+					CALL1("eval->string", Sstring(eval.c_str()));
+				}
 			}
 		}
 		catch (...) {
@@ -300,6 +314,53 @@ void cancel_commands()
 }
 
 
+// feeds the every_step function into the fast path of the scheme 
+// evaluator thread.
+VOID CALLBACK run_every(PVOID lpParam, BOOLEAN TimerOrWaitFired) {
+	WaitForSingleObject(g_script_mutex, INFINITE);
+	CALL0("every_step");
+	ReleaseMutex(g_script_mutex);
+}
+
+HANDLE timer_queue = nullptr;
+HANDLE h_timer = nullptr;
+
+void stop_every() {
+	if (timer_queue != nullptr && h_timer != nullptr) {
+		DeleteTimerQueueTimer(timer_queue, h_timer, NULL);
+		timer_queue = nullptr; h_timer = nullptr;
+	}
+}
+
+void start_every(int delay, int period) {
+
+	timer_queue = nullptr;
+	h_timer = nullptr;
+	if (nullptr == timer_queue)
+	{
+		timer_queue = CreateTimerQueue();
+	}
+	try {
+		CreateTimerQueueTimer(&h_timer, timer_queue,
+			static_cast<WAITORTIMERCALLBACK>(run_every), nullptr, delay, period, WT_EXECUTEINTIMERTHREAD);
+	}
+	catch (const CException& e)
+	{
+		// Display the exception and quit
+		MessageBox(nullptr, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+		return;
+	}
+}
+
+ptr every(int delay, int period) {
+	if (delay == 0 || period == 0) {
+		stop_every();
+	}
+	else {
+		start_every(delay, period);
+	}
+	return Strue;
+}
 
 void eval_scite(HWND hc)
 {
@@ -997,13 +1058,9 @@ ptr graphics_keys(void) {
 	return a;
 }
 
-
 Gdiplus::Bitmap* image_view_bitmap = nullptr;
 int previous_cw = 0;
 int previous_ch = 0;
-
- 
-
 
 LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -1045,7 +1102,7 @@ LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		break;
 	 
 	case WM_TIMER:
-	// fast display timer
+	// fast display path activated by the timer
 		if (GlobalGraphics::get_display_surface() != nullptr) {
 
 			const auto cw = GetClientRect().Width();
@@ -1059,6 +1116,7 @@ LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			g.SetSmoothingMode(Gdiplus::SmoothingModeNone);
 			g.SetInterpolationMode(Gdiplus::InterpolationModeDefault);
 			g.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+			WaitForSingleObject(g_image_rotation_mutex, INFINITE);
 			g.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w, h);
 			ReleaseMutex(g_image_rotation_mutex);
 		}
