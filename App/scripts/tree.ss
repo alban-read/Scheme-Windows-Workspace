@@ -1,7 +1,5 @@
 ;; draw a tree in the image view.
 ;; based on example from rosetta code.
-;; draw a tree in the image view.
-;; based on example from rosetta code.
 
 (define draw-tree
  (lambda ()

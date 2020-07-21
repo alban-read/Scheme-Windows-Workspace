@@ -6,10 +6,8 @@
 #define TEXT_H
 #include "gdiplus.h" 
 #include "EventSink.h"
- 
 
-extern __declspec(dllimport)  Gdiplus::Bitmap* background;
-extern __declspec(dllimport)  int _graphics_mode;
+
 
 // these flags control the launch mode.
 extern "C" __declspec(dllimport) bool inGuiMode();
@@ -154,9 +152,6 @@ class CViewImage : public CWnd
 public:
 	CViewImage() {}
 	virtual ~CViewImage() {}
-	void setBackground(Gdiplus::Bitmap* back) { background = back; _graphics_mode = 0; }
-	Gdiplus::Bitmap* getBackground() { return background; }
-	void setMode(int m) { _graphics_mode = m; }
 	virtual void OnInitialUpdate();
 protected:
 	virtual BOOL OnCommand(WPARAM wParam, LPARAM lParam);

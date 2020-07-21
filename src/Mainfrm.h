@@ -18,12 +18,14 @@ public:
 	virtual ~CMainFrame();
 	void load_default_dockers();
 	void load_image_dockers();
+	void load_full_image_dockers();
 	void load_browser_dockers();
 	void load_default_browser_dockers();
 	void load_full_browser_dockers();
 	BOOL on_dock_close_all();
 	BOOL on_dock_default();
 	BOOL on_dock_image();
+	BOOL on_dock_full_image();
 	BOOL on_dock_browser();
 	BOOL on_dock_full_browser();
 	static BOOL on_browser_help();

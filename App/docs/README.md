@@ -7,7 +7,7 @@
 | [The workspace](gui.html)    |                         |                                       |
 | ---------------------------- | ----------------------- | ------------------------------------- |
 | [Browser Pane](browser.html) | [Keys](keys.html)       | [Graphics ](graphics.html)            |
-|                              | [License](license.html) | [Implementation](implementation.html) |
+| [Animation](Animation.html)  | [License](license.html) | [Implementation](implementation.html) |
 
 ------
 

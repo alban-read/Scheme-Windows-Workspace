@@ -23,7 +23,7 @@
 using namespace Gdiplus;
 
 // chez scheme engine..
-#include "scheme/scheme.h"
+#include <scheme.h>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
@@ -92,9 +92,7 @@ using namespace Gdiplus;
 #pragma comment(lib, "msvcprtd.lib")
  
 
-#ifndef ABNORMAL_EXIT
-#define ABNORMAL_EXIT ((void (*)(void))0)
-#endif /* ABNORMAL_EXIT */
+
 
 namespace Text {
 	extern ptr utf8_string_separated_to_list(char* s, const char sep);
@@ -118,13 +116,15 @@ extern "C" __declspec(dllexport) bool XL_SAFETY_ON = true;
 
 void _init_graphics();
 void init_commands();
-void cancel_commands();
+void safe_cancel_commands();
+
+ptr graphics_keys(void);
+extern HWND image_hwnd;
 
 extern "C" __declspec(dllexport) ptr EscapeKeyPressed()
 {
 	if (GetAsyncKeyState(VK_ESCAPE) != 0)
 	{
-		cancel_commands();
 		return Strue;
 	}
 	return Sfalse;
@@ -209,7 +209,7 @@ extern HANDLE script_thread;
 extern HANDLE g_script_mutex;
 
 extern void start_time_stamp_timing();
-extern void start_watch_dog();
+ 
 
 std::wstring widen(const std::string& in)
 {
@@ -1405,6 +1405,15 @@ ptr window_layout(const int n)
 	return Strue;
 }
 
+ptr set_repaint_timer(const int n)
+{
+	KillTimer(image_hwnd, 1000);
+	if (n > 0) {
+		SetTimer(image_hwnd, 1000, n, NULL);
+	}
+	return Strue;
+}
+
 
 char* get_this_path(char* dest, const size_t dest_size)
 {
@@ -1414,6 +1423,8 @@ char* get_this_path(char* dest, const size_t dest_size)
 	PathRemoveFileSpecA(dest);
 	return dest;
 }
+
+
 
 // how scales the image to the pane.
 __declspec(dllexport) ptr GRUPDATE(const int how)
@@ -1425,7 +1436,8 @@ __declspec(dllexport) ptr GRUPDATE(const int how)
 
 	if (how == 0)
 	{
-		theApp.GetMainFrame().GetDockFromID(ID_DOCK_GRAFF1)->GetView().RedrawWindow();
+		
+		InvalidateRect(image_hwnd, 0, 0);
 	}
 	if (how == 1)
 	{
@@ -1447,10 +1459,22 @@ __declspec(dllexport) ptr GRUPDATE(const int how)
 	{
 		theApp.GetMainFrame().Invalidate(false);
 	}
-
+	if (how == 6)
+	{
+		theApp.GetMainFrame().GetDockFromID(ID_DOCK_GRAFF1)->GetView().InvalidateRect(false);
+	}
 	return Strue;
 }
  
+__declspec(dllexport) ptr GRACTIVATE()
+{
+	if (nullptr == theApp.GetMainFrame().GetDockFromID(ID_DOCK_GRAFF1))
+	{
+		return Snil;
+	}
+	SendMessageA(0, WM_USER + 514, (WPARAM)image_hwnd, 0);
+	return Strue;
+}
 
 
 void redirect_io_to_console()
@@ -1538,6 +1562,14 @@ void load_script_ifexists(const char* script_relative)
 }
 
 
+DWORD WINAPI execstartup(LPVOID cmd);
+void abnormal_exit() 
+{
+	appendTranscript("scheme engine died.");
+	
+	exit(1);
+}
+
 
 // we are running ahead of the GUI opening
 DWORD WINAPI execstartup(LPVOID cmd)
@@ -1545,19 +1577,13 @@ DWORD WINAPI execstartup(LPVOID cmd)
 
 	try
 	{
-	 
 
-		Gdiplus::GdiplusStartupInput gdiplusStartupInput;
-		ULONG_PTR gdiplusToken;
-
-		Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
-
-		Sscheme_init(ABNORMAL_EXIT);
+		Sscheme_init(abnormal_exit);
 
 		bool register_petite = false;
 		bool register_cs = false;
 
-
+	
 		register_boot_file("\\boot\\petite.boot", register_petite);
 		register_boot_file("petite.boot", register_petite);
 		register_boot_file("\\boot\\scheme.boot", register_cs);
@@ -1583,6 +1609,7 @@ DWORD WINAPI execstartup(LPVOID cmd)
 		Sforeign_symbol("setInputed", static_cast<void *>(set_inputed));
 		Sforeign_symbol("getInputed", static_cast<ptr>(get_inputed));
 		Sforeign_symbol("graphicsUpdate", static_cast<ptr>(GRUPDATE));
+		Sforeign_symbol("graphicsActivate", static_cast<ptr>(GRACTIVATE));
 		Sforeign_symbol("EscapeKeyPressed", static_cast<ptr>(EscapeKeyPressed));
 		
 
@@ -1603,16 +1630,16 @@ DWORD WINAPI execstartup(LPVOID cmd)
 
 		// set the window layout policy
 		Sforeign_symbol("WindowLayout", static_cast<ptr>(window_layout));
+		Sforeign_symbol("set_repaint_timer", static_cast<ptr>(set_repaint_timer));
+		
 		Sforeign_symbol("GetFullPath", static_cast<ptr>(GetFullPath));
 
-
 		_init_graphics();
-
+		Sforeign_symbol("graphics_keys", static_cast<ptr>(graphics_keys));
+ 
 		// load scripts
 		load_script_ifexists("\\scripts\\base.ss");
 		load_script_ifexists("\\scripts\\init.ss");
-
-	
 		
 		load_script_ifexists("\\scripts\\env.ss");
 
@@ -1621,24 +1648,6 @@ DWORD WINAPI execstartup(LPVOID cmd)
 
 		load_script_ifexists("\\scripts\\browser.ss");
 		load_script_ifexists("\\scripts\\appstart.ss");
-
-		// spin of some periodic gc.
-		static auto gc_thread = CreateThread(
-			nullptr,
-			0,
-			garbage_collect,
-			nullptr,
-			0,
-			nullptr);
-
-		static auto busy_thread = CreateThread(
-			nullptr,
-			0,
-			busy_indicator,
-			nullptr,
-			0,
-			nullptr);
-
 
 	}
 	catch (const CException& e)
@@ -1649,16 +1658,12 @@ DWORD WINAPI execstartup(LPVOID cmd)
 
 	return 0;
 }
-
-
 // runs on initial update
 void post_gui_load_script()
 {
 	load_script_ifexists("\\scripts\\initialupdate.ss");
 
 }
-
- 
 
 void start_com()
 {
@@ -1685,26 +1690,28 @@ bool load_lexer()
 	return false;
 }
 
-
+extern __declspec(dllexport) HANDLE g_image_rotation_mutex;
  
 int APIENTRY WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
-	 
 	set_browser_feature_control();
  
 	start_com();
  
+	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
+	ULONG_PTR gdiplusToken;
+
+	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
+
 	g_script_mutex = CreateMutex(nullptr, FALSE, nullptr);
+	g_image_rotation_mutex=CreateMutex(nullptr, FALSE, nullptr);
 
 	start_time_stamp_timing();
 
 	try
 	{
 		load_lexer();
-		start_watch_dog();
-		execstartup(L"");
-		init_commands();
-
+		init_commands(); 
 		try
 		{
 			const auto val = theApp.Run();

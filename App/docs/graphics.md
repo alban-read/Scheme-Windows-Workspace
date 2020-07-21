@@ -154,8 +154,6 @@ Or set the gradient brush then create the blank image
 
 To re-display a changed image on the image view
 
-The parameter for show (0-3) sends the update message to different parts of the application window; forcing more or less of the screen to refresh.
-
 ```scheme
 (show) ;; show the image
 ```
@@ -191,7 +189,9 @@ The parameter for show (0-3) sends the update message to different parts of the 
 
 The following commands draw onto the image.
 
-*Remember that no changes are displayed on the screen until you re-show the image*
+*Remember that no changes are displayed on the screen until you show the image*
+
+show swaps the active surface with the display surface; and then tells the image to update.
 
 ### Lines
 
@@ -395,7 +395,7 @@ Try adding these transformations using the matrix commands
 ```scheme
 (reset-matrix)  		   ;; clear the matrix
 (rotate-at  0 0 10.0 )	   ;; rotate
-(scale 1.2 2.0)			  ;; scale 
+(scale 1.2 2.0)			   ;; scale 
 (translate -20.0 -20.0)    ;; translate
 (shear 0.10 0.10) 		   ;; shear 
 ```
@@ -522,4 +522,55 @@ Mode 3 is handy when working on high DPI screens.
 
  
 ```
+
+## Animation
+
+#### The Repaint timer
+
+There are three surfaces used by the image viewer; these are the display surface; the active surface and the screen surface. 
+
+The active surface is used by all of the drawing commands; the display surface is only used to display the results.
+
+When displaying the image view; a screen surface is used; this is filled with a checker board pattern first and then the display surface is drawn onto it; the combined image is then copied into the window.
+
+The repaint timer when enabled overdraws only the changing 'display surface' part of the image viewer directly.
+
+```Scheme
+;; set the image viewer to redisplay itself at 30fps.
+(set-repaint-timer 33)
+
+(define random-lines
+  (lambda (n)
+    (dotimes n 
+     ;; switch active and display; preserving.
+	  (gswap 1)
+      (pen-width (+ 2.0 (random 6)))
+      (colour (random 255) (random 255) (random 255) 255)
+      (draw-line
+        (random 800)
+        (random 600)
+        (random 800)
+        (random 600)))))
+;;
+(paper 10 20 100 255)
+(clr 800 600)
+(gswap 1)
+;; shift-return on the line below 
+(random-lines 300)
+;;
+```
+
+When using the repaint timer a script just needs to do its drawing and then swap over the active and display surfaces (using gswap.) 
+
+(gswap 1) copies the current active surface to the new one; so that a picture builds incrementally.
+
+(gswap 0) switches surfaces without copying the latest data; used for animation; where every scene is completely redrawn.
+
+ The display timer takes care of updating the image viewer.
+
+This should allow for some simple animations.
+
+(set-repaint-timer 0) 
+
+Turns off the repaint timer.
 

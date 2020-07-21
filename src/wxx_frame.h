@@ -3167,9 +3167,9 @@ namespace Win32xx
 		m_SBTheme = SBT;
 	}
 
+	// AR since adding another part to a status bar appears to be impossible; I am re-using SCRL
 	template <class T>
 	inline void CFrameT<T>::SetStatusIndicators()
-	// Creates 4 panes in the status bar and displays status and key states.
 	{
 		if (GetStatusBar().IsWindow() && (m_UseIndicatorStatus))
 		{
@@ -3178,25 +3178,29 @@ namespace Win32xx
 			c_string CAP = LoadString(IDW_INDICATOR_CAPS);
 			c_string NUM = LoadString(IDW_INDICATOR_NUM);
 			c_string SCRL = LoadString(IDW_INDICATOR_SCRL);
+ 
 			CSize csCAP  = dcStatus.GetTextExtentPoint32(CAP, lstrlen(CAP)+1);
 			CSize csNUM  = dcStatus.GetTextExtentPoint32(NUM, lstrlen(NUM)+1);
 			CSize csSCRL = dcStatus.GetTextExtentPoint32(SCRL, lstrlen(SCRL)+1);
-
+			CSize csELLAPSED = dcStatus.GetTextExtentPoint32(L"0123456789", lstrlen(L"012345679") + 1);
 			// Adjust for DPI aware
 			int dpiX = dcStatus.GetDeviceCaps(LOGPIXELSX);
 			csCAP.cx  = MulDiv(csCAP.cx, dpiX, 96);
 			csNUM.cx  = MulDiv(csNUM.cx, dpiX, 96);
 			csSCRL.cx = MulDiv(csSCRL.cx, dpiX, 96);
+			csELLAPSED.cx = MulDiv(csELLAPSED.cx, dpiX, 96);
 
 			// Get the coordinates of the window's client area.
 			CRect rcClient = T::GetClientRect();
 			int width = MAX(300, rcClient.right);
-
-			// Create 4 panes
-			GetStatusBar().SetPartWidth(0, width - (csCAP.cx+csNUM.cx+csSCRL.cx+20));
+			int text_width = width - (csCAP.cx + csNUM.cx + csSCRL.cx + csELLAPSED.cx);
+		 
+			GetStatusBar().SetPartWidth(0, text_width);
 			GetStatusBar().SetPartWidth(1, csCAP.cx);
 			GetStatusBar().SetPartWidth(2, csNUM.cx);
 			GetStatusBar().SetPartWidth(3, csSCRL.cx);
+			GetStatusBar().SetPartWidth(4, csELLAPSED.cx);
+		 
 
 			c_string Status1 = (::GetKeyState(VK_CAPITAL) & 0x0001)? CAP : c_string("");
 			c_string Status2 = (::GetKeyState(VK_NUMLOCK) & 0x0001)? NUM : c_string("");
@@ -3205,11 +3209,10 @@ namespace Win32xx
 			// Only update indicators if the text has changed
 			if (Status1 != m_OldStatus[0])  GetStatusBar().SetPartText(1, Status1);
 			if (Status2 != m_OldStatus[1])  GetStatusBar().SetPartText(2, Status2);
-			if (Status3 != m_OldStatus[2])  GetStatusBar().SetPartText(3, Status3);
-
+			if (Status3 != m_OldStatus[2])  GetStatusBar().SetPartText(3, Status3); // AR
 			m_OldStatus[0] = Status1;
 			m_OldStatus[1] = Status2;
-			m_OldStatus[2] = Status3;
+			m_OldStatus[2] = Status3; // AR
 		}
 	}
 

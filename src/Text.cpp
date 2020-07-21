@@ -23,13 +23,33 @@ extern DWORD WINAPI  execstartup(LPVOID cmd);
 // what mode are we running in.
 extern bool launch_gui;
 extern char* noncezero;
+ 
+ 
+
+namespace GlobalGraphics {
+	Gdiplus::Bitmap* __stdcall get_display_surface(void);
+	int graphics_mode();
+}
+
 
 namespace Text {
-	extern ptr utf8_string_separated_to_list(char* s, const char sep);
+	ptr utf8_string_separated_to_list(char* s, const char sep);
 	void trim_utf8(std::string& hairy);
 	int strlen_utf8(const char* s);
 	ptr utf8_to_sstring(char* s);
 	std::wstring widen(const std::string& in);
+}
+
+namespace Assoc {
+	ptr sstring(const char* symbol, const char* value);
+	ptr sflonum(const char* symbol, const float value);
+	ptr sfixnum(const char* symbol, const int value);
+	ptr sptr(const char* symbol, ptr value);
+	ptr cons_sstring(const char* symbol, const char* value, ptr l);
+	ptr cons_sbool(const char* symbol, bool value, ptr l);
+	ptr cons_sptr(const char* symbol, ptr value, ptr l);
+	ptr cons_sflonum(const char* symbol, const float value, ptr l);
+	ptr cons_sfixnum(const char* symbol, const int value, ptr l);
 }
 
 struct stop_watch {
@@ -77,6 +97,9 @@ const COLORREF cyan = RGB(0, 255, 255);
 const COLORREF gray = RGB(120, 120, 180);
 const COLORREF orange = RGB(255, 102, 0);
 
+
+
+
 LRESULT send_editor(HWND h, UINT Msg, WPARAM wParam = 0, LPARAM lParam = 0)
 {
 	return ::SendMessage(h, Msg, wParam, lParam);
@@ -98,6 +121,7 @@ ptr utf8_sep_to_list(char* s, const char sep) {
 HANDLE script_thread = nullptr;
 HANDLE g_script_mutex;
 HANDLE g_commands_mutex;
+extern HANDLE g_image_rotation_mutex;
 
 bool timing = true;
 
@@ -131,20 +155,7 @@ bool timeount_on_script_lock(const int turns)
 }
 
  
-DWORD WINAPI  garbage_collect(LPVOID cmd)
-{
-	while (true) {
-		auto dw_wait_result = WaitForSingleObject(g_script_mutex, 200);
-		while (dw_wait_result == WAIT_TIMEOUT)
-		{
-			dw_wait_result = WaitForSingleObject(g_script_mutex, 200);
-		}
-		CALL0("gc");
-		ReleaseMutex(g_script_mutex);
-		Sleep(500);
-	}
-}
-
+ 
 
 
 std::deque<std::string> commands;
@@ -152,6 +163,128 @@ std::deque<std::string> commands;
 // script execution; 
 
 bool cancelling = false;
+
+void eval_text(const char* cmd)
+{
+	WaitForSingleObject(g_commands_mutex, INFINITE);
+	commands.emplace_back(cmd);
+	ReleaseMutex(g_commands_mutex);
+}
+
+void safe_cancel_commands()
+{
+	cancelling = true;
+	WaitForSingleObject(g_commands_mutex, INFINITE);
+	while (!commands.empty())
+	{
+		commands.pop_front();
+	}
+	commands.shrink_to_fit();
+	ReleaseMutex(g_commands_mutex);
+	Sleep(250);
+}
+
+
+void init_commands();
+
+DWORD WINAPI  process_commands(LPVOID x)
+{
+
+	// scheme engine begins
+	WaitForSingleObject(g_script_mutex,INFINITE);
+    execstartup(L"");
+	ReleaseMutex(g_script_mutex);
+
+	int ticks = 0;
+
+	// now watch for scripts to run.
+	while (true) {
+
+	 
+		if (GetAsyncKeyState(VK_ESCAPE) != 0)
+		{
+			cancelling = true;
+			WaitForSingleObject(g_commands_mutex, INFINITE);
+			while (!commands.empty())
+			{
+				commands.pop_front();
+			}
+			commands.shrink_to_fit();
+			ReleaseMutex(g_commands_mutex);
+		}
+
+	
+		WaitForSingleObject(g_script_mutex, INFINITE);
+		if (commands.empty()) {
+			auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(0, L"Ready");
+		}
+		ReleaseMutex(g_script_mutex);
+		while (commands.empty())
+		{
+			Sleep(25);
+		}
+		WaitForSingleObject(g_commands_mutex, INFINITE);
+		std::string eval;
+		int pending_commands;
+		if (!commands.empty()) {
+			eval = commands.front();
+			commands.pop_front();
+			pending_commands = commands.size();
+			if (pending_commands > 0) {
+				auto text_message = Text::widen(fmt::format("Busy: {0} in queue.", pending_commands));
+				auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(0, text_message.c_str());
+			}
+		}
+		ReleaseMutex(g_commands_mutex);
+
+		WaitForSingleObject(g_script_mutex, INFINITE);
+		try {
+		
+			if (pending_commands == 0) {
+				auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(0, L"Busy");
+			}
+			if (timing==true) {
+				auto t1 = ellapsed_seconds_since_starting();
+				CALL1("eval->string", Sstring(eval.c_str()));
+				auto t2 = ellapsed_seconds_since_starting() - t1;
+				if (inGuiMode() &&
+					theApp.GetMainFrame().GetHwnd() != nullptr) {
+					auto ellapsed = Text::widen(fmt::format("{0}", t2));
+					auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(4, ellapsed.c_str());
+				}
+			}
+			else {
+				CALL1("eval->string", Sstring(eval.c_str()));
+			}
+		}
+		catch (...) {
+			ReleaseMutex(g_script_mutex);
+		}
+		// run some gc
+		ticks++;
+		if (ticks % 10 == 0) {
+			CALL0("gc");
+		}
+		ReleaseMutex(g_script_mutex);
+		::Sleep(20);
+	}	
+ 
+}
+
+// this is the scheme thread 
+void init_commands() {
+
+
+	// script exec background thread
+	static auto cmd_thread = CreateThread(
+		nullptr,
+		0,
+		process_commands,
+		nullptr,
+		0,
+		nullptr);
+}
+
 
 void cancel_commands()
 {
@@ -166,128 +299,6 @@ void cancel_commands()
 	Sleep(250);
 }
 
-
-DWORD WINAPI  process_commands(LPVOID x)
-{
-	while (true) {
-
-		while (commands.empty())
-		{
-			Sleep(10);
-		}
-
-		std::string eval;
-		WaitForSingleObject(g_commands_mutex, INFINITE);
-		if (!commands.empty()) {
-
-			eval = commands.front();
-			commands.pop_front();
-		}
-		ReleaseMutex(g_commands_mutex);
-
-		WaitForSingleObject(g_script_mutex, INFINITE);
-		try {
-			if (timing==true) {
-				auto t1 = ellapsed_seconds_since_starting();
-				CALL1("eval->string", Sstring(eval.c_str()));
-				auto t2 = ellapsed_seconds_since_starting() - t1;
-				if (inGuiMode() &&
-					theApp.GetMainFrame().GetHwnd() != nullptr) {
-					auto ellapsed = Text::widen(fmt::format("{0}", t2));
-					auto sbw = theApp.GetMainFrame().GetStatusBar().SetPartWidth(3, 200);
-					auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(3, ellapsed.c_str());
-				}
-			}
-			else {
-				CALL1("eval->string", Sstring(eval.c_str()));
-			}
-		}
-		catch (...) {
-
-		}
-		ReleaseMutex(g_script_mutex);
-		::Sleep(20);
-	}
-}
-
-void init_commands() {
-	// script exec background thread
-	static auto cmd_thread = CreateThread(
-		nullptr,
-		0,
-		process_commands,
-		nullptr,
-		0,
-		nullptr);
-}
-
-DWORD WINAPI  busy_indicator(LPVOID x)
-{
-	RECT rect;
-	int last_pending_commands = -1;
-	while (true) {
-		int pending_commands;
-		WaitForSingleObject(g_commands_mutex, INFINITE);
-		pending_commands = commands.size();
-		ReleaseMutex(g_commands_mutex);
-
-		if (pending_commands != last_pending_commands) {
-			last_pending_commands = pending_commands;
-			auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(0, L"Ready");
-			if (pending_commands > 0) {
-				auto text_message = Text::widen(fmt::format("Busy: {0} in queue.", pending_commands));
-				auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(0, text_message.c_str());
-			}
-		}
-		Sleep(250);
-	}
-}
-
-VOID CALLBACK watch_dog(PVOID lpParam, BOOLEAN TimerOrWaitFired)
-{
-	// This GUI HANG should not happen given that scripts execute on entirely separate threads
-	const PDWORD_PTR result = nullptr;
-	if (inGuiMode() &&
-		theApp.GetMainFrame().GetHwnd() != nullptr
-		&& SendMessageTimeout(theApp.GetMainFrame().GetHwnd(), WM_USER + 502, 0, 0, SMTO_ABORTIFHUNG, 1000,
-			result) == 0)
-	{
-		auto* e = new char[2048];
-		sprintf_s(e, 2000, "App hang at %5.3f seconds!", ellapsed_seconds_since_starting());
-		appendTranscriptNL(e);
-		auto ok = theApp.GetMainFrame().GetStatusBar().SetPartText(0, L"APP Busy");
-
-	}
-}
-
-void start_watch_dog() {
-
-	HANDLE timer_queue = nullptr;
-	const auto seconds = 1;
-	HANDLE h_timer = nullptr;
-	if (nullptr == timer_queue)
-	{
-		timer_queue = CreateTimerQueue();
-	}
-	try {
-		CreateTimerQueueTimer(&h_timer, timer_queue,
-			static_cast<WAITORTIMERCALLBACK>(watch_dog), nullptr, 10 * 1000, seconds * 1000, 0);
-	}
-	catch (const CException& e)
-	{
-		// Display the exception and quit
-		MessageBox(nullptr, e.GetText(), AtoT(e.what()), MB_ICONERROR);
-		return;
-	}
-}
-
-
-void eval_text(const char* cmd)
-{
-	WaitForSingleObject(g_commands_mutex, INFINITE);
-	commands.emplace_back(cmd);
-	ReleaseMutex(g_commands_mutex);
-}
 
 
 void eval_scite(HWND hc)
@@ -317,7 +328,7 @@ const char *sc_getExprText() {
 char* get_browser_selection_text();
 void eval_selected_scite(HWND hc)
 {
-	auto ok=theApp.GetMainFrame().GetStatusBar().SetPartText(3, L"--.--");
+	auto ok=theApp.GetMainFrame().GetStatusBar().SetPartText(4, L"--.--");
 	ptr result;
 
 	// if in text pane
@@ -335,7 +346,7 @@ void eval_selected_scite(HWND hc)
 			eval_text(cmd);
 		}
 		catch (...) {
-			auto err=theApp.GetMainFrame().GetStatusBar().SetPartText(3, L"!!.!!");
+			auto err=theApp.GetMainFrame().GetStatusBar().SetPartText(4, L"ERROR");
 			return;
 		}
 		return;
@@ -349,7 +360,7 @@ void eval_selected_scite(HWND hc)
 		eval_text(cmd);
 	}
 	catch (...) {
-		auto err = theApp.GetMainFrame().GetStatusBar().SetPartText(3, L"B!.!!");
+		auto err = theApp.GetMainFrame().GetStatusBar().SetPartText(4, L"ERROR");
 	}
 
 }
@@ -384,6 +395,7 @@ void sc_setText(HWND h, char *text) {
 void sc_appendText(HWND h, char *text) {
 	const int l = strlen(text);
 	send_editor(h, SCI_APPENDTEXT, l, reinterpret_cast<LPARAM>(text));
+	Sleep(10);
 }
 
 void sc_setTextFromFile(HWND h, char *fname) {
@@ -421,6 +433,7 @@ extern "C" {
 	void appendEditor(char *s)
 	{
 		sc_setText(response, s);
+		Sleep(10);
 	}
 	void appendTranscript(char *s)
 	{
@@ -513,12 +526,12 @@ static const char g_scheme[] =
 "hash "
 "if in inexact? integer? integer->char import iota "
 "lambda last-pair length let let* letrec let-rec list list? list-ref  list->string list-tail "
-"map max member memq memv min "
+"map max member memq memv min mod"
 "negative? null? numerator "
 "pair? positive? procedure? "
 "quasiquote quote quotient "
 "read real? remainder reverse "
-"seq sequence set! set-car! set-cdr! sqrt sublist symbol? "
+"seq sequence set! set-car! set-cdr! sqrt step sublist symbol? "
 "string? string=? string-append string-copy string-length string->list string-ref  string-set! substring syntax-rules "
 "to try truncate  "
 "unless unquote "
@@ -952,81 +965,195 @@ LRESULT CViewText::on_drop_files(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 
 // graphic viewer
+// windows procedure
+
+
+// gui window layout
+
+Gdiplus::Pen pen_black(Gdiplus::Color::Black, 1);
+
+struct {
+	int when;
+	boolean left;
+	boolean right;
+	boolean up;
+	boolean down;
+	boolean ctrl;
+	boolean space;
+	int key_code;
+} graphics_keypressed;
+
+
+ptr graphics_keys(void) {
+	ptr a = Snil;
+	a = Assoc::cons_sbool("left", graphics_keypressed.left,a);
+	a = Assoc::cons_sbool("right", graphics_keypressed.right, a);
+	a = Assoc::cons_sbool("up", graphics_keypressed.up, a);
+	a = Assoc::cons_sbool("down", graphics_keypressed.down, a);
+	a = Assoc::cons_sbool("ctrl", graphics_keypressed.ctrl, a);
+	a = Assoc::cons_sbool("space", graphics_keypressed.space, a);
+	a = Assoc::cons_sfixnum("key", graphics_keypressed.key_code, a);
+	a = Assoc::cons_sfixnum("recent", GetTickCount() - graphics_keypressed.when, a);
+	return a;
+}
+
+
+Gdiplus::Bitmap* image_view_bitmap = nullptr;
+int previous_cw = 0;
+int previous_ch = 0;
+
+ 
 
 
 LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+	auto hdc = this->GetDC();
 	switch (uMsg)
 	{
 
-	case WM_SIZE:
-	case WM_PAINT:
-	case WM_WINDOWPOSCHANGED:
+	case WM_KEYDOWN:
+		graphics_keypressed.ctrl = false;
+		graphics_keypressed.left = false;
+		graphics_keypressed.right = false;
+		graphics_keypressed.down = false;
+		graphics_keypressed.up = false;
+		graphics_keypressed.space = false;
+		graphics_keypressed.key_code = wParam;
+		graphics_keypressed.when = GetTickCount();
+		switch (wParam) {
 
-	{
-		// display background image; or hatch
-		auto dc = this->GetDC();
+		case VK_CONTROL:
+			graphics_keypressed.ctrl = true;
+			break;
+		case VK_LEFT:
+			graphics_keypressed.left = true;
+			break;
+		case VK_RIGHT:
+			graphics_keypressed.right = true;
+			break;
+		case VK_UP:
+			graphics_keypressed.up = true;
+			break;
+		case VK_DOWN:
+			graphics_keypressed.down = true;
+			break;
+		case VK_SPACE:
+			graphics_keypressed.space = true;
+			break;
 
-		if (background != nullptr) {
+		}
+		break;
+	 
+	case WM_TIMER:
+	// fast display timer
+		if (GlobalGraphics::get_display_surface() != nullptr) {
 
 			const auto cw = GetClientRect().Width();
 			const auto ch = GetClientRect().Height();
-			auto *bmp = new Gdiplus::Bitmap(cw, ch, PixelFormat32bppRGB);
-			Gdiplus::Graphics g2(bmp);
-			Gdiplus::Pen black(Gdiplus::Color::Black, 1);
-			const auto h = background->GetHeight();
-			const auto w = background->GetWidth();
+			const auto h = GlobalGraphics::get_display_surface()->GetHeight();
+			const auto w = GlobalGraphics::get_display_surface()->GetWidth();
+			Gdiplus::Graphics g(hdc);
+			g.SetCompositingMode(Gdiplus::CompositingModeSourceCopy);
+			g.SetCompositingQuality(Gdiplus::CompositingQualityHighSpeed);
+			g.SetPixelOffsetMode(Gdiplus::PixelOffsetModeNone);
+			g.SetSmoothingMode(Gdiplus::SmoothingModeNone);
+			g.SetInterpolationMode(Gdiplus::InterpolationModeDefault);
+			g.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+			g.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w, h);
+			ReleaseMutex(g_image_rotation_mutex);
+		}
+		break;
+	case WM_PAINT:
+	case WM_SHOWWINDOW:
+	case WM_SIZE:
+	case WM_ACTIVATE:
+	case WM_WINDOWPOSCHANGED:
+	{
+		// display background image; or hatch; behind our image
+		int _graphics_mode = GlobalGraphics::graphics_mode();
+		if (GlobalGraphics::get_display_surface() != nullptr) {
+
+			const auto cw = GetClientRect().Width();
+			const auto ch = GetClientRect().Height();
+
+
+			if (previous_ch != ch || previous_ch != ch) {
+				if (image_view_bitmap != nullptr) {
+					delete image_view_bitmap;
+					image_view_bitmap = nullptr;
+
+				}
+			}
+
+			if (image_view_bitmap == nullptr) {
+				appendTranscriptNL("*new screen image*");
+				image_view_bitmap = new Gdiplus::Bitmap(cw, ch, PixelFormat32bppRGB);
+			}
+
+			previous_cw = cw;
+			previous_ch = ch;
+
+			// g2 can draw onto image_view.
+			Gdiplus::Graphics g2(image_view_bitmap);
+
+			const auto h = GlobalGraphics::get_display_surface()->GetHeight();
+			const auto w = GlobalGraphics::get_display_surface()->GetWidth();
 
 			// if not in a fill mode have a border to draw.
-			if (_graphics_mode != 4) {
+			if (_graphics_mode != 4 ) {
 				Gdiplus::Brush* brush = new Gdiplus::HatchBrush(Gdiplus::HatchStyle::HatchStyleLargeCheckerBoard,
-				                                                Gdiplus::Color::DarkGray, Gdiplus::Color::LightGray);
+					Gdiplus::Color::DarkGray, Gdiplus::Color::LightGray);
 				g2.FillRectangle(brush, 0, 0, cw, ch);
 				delete brush;
 			}
 
-			Gdiplus::Graphics g(dc.GetHDC());
+			Gdiplus::Graphics g(hdc);
 
+			WaitForSingleObject(g_image_rotation_mutex, INFINITE);
+		
 			switch (_graphics_mode) {
-			case 0: // 1:1
-				g2.DrawRectangle(&black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(background, 5, 5, w, h);
+			case 0:
+				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+				g2.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w, h);
 				break;
 			case 1: // 1:2
-				g2.DrawRectangle(&black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(background, 5, 5, w / 2, h / 2);
+				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+				g2.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w / 2, h / 2);
 				break;
 			case 2: // 1:4
-				g2.DrawRectangle(&black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(background, 5, 5, w / 4, h / 4);
+				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+				g2.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w / 4, h / 4);
 				break;
 			case 3: // 2:1
-				g2.DrawRectangle(&black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(background, 5, 5, w * 2, h * 2);
+				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+				g2.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w * 2, h * 2);
 				break;
-			case 4: // Fill
-				g.DrawImage(background, 1, 1, cw - 2, ch - 2);
+			case 4: // Fill direct to hdc window.
+				g.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, cw - 2, ch - 2);
 				break;
 			case 5: // 2:3
-				g2.DrawRectangle(&black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(background, 1, 1, w * 2 / 3, h * 2 / 3);
+				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+				g2.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, w * 2 / 3, h * 2 / 3);
 				break;
 			case 6: // 3:4
-				g2.DrawRectangle(&black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(background, 1, 1, w * 3 / 4, h * 3 / 4);
+				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+				g2.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, w * 3 / 4, h * 3 / 4);
 				break;
 			case 7: // 3:2
-				g2.DrawRectangle(&black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(background, 1, 1, w * 3 / 2, h * 3 / 2);
+				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+				g2.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, w * 3 / 2, h * 3 / 2);
 				break;
-
+			case 8: // 1:1 - faster
+				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
+				g2.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, w * 3 / 2, h * 3 / 2);
+				break;
 			}
-			if (_graphics_mode != 4) {
-				g.DrawImage(bmp, 0, 0, cw, ch);
-				delete bmp;
+			ReleaseMutex(g_image_rotation_mutex);
+			if (_graphics_mode != 4 ) {
+				// draw third buffer 
+				g.DrawImage(image_view_bitmap, 0, 0, cw, ch);
 			}
-
-
+			
 		}
 		else {
 
@@ -1035,8 +1162,8 @@ LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			const auto ch = GetClientRect().Height();
 			Gdiplus::Pen black_pen(Gdiplus::Color::Black, 1);
 			Gdiplus::Brush* brush = new Gdiplus::HatchBrush(Gdiplus::HatchStyle::HatchStyleLargeCheckerBoard,
-			                                                Gdiplus::Color::DarkGray, Gdiplus::Color::LightGray);
-			Gdiplus::Graphics g(dc.GetHDC());
+				Gdiplus::Color::DarkGray, Gdiplus::Color::LightGray);
+			Gdiplus::Graphics g(hdc);
 			g.FillRectangle(brush, 0, 0, cw, ch);
 			g.DrawRectangle(&black_pen, 0, 0, cw - 1, ch - 1);
 
@@ -1125,7 +1252,7 @@ BOOL CViewImage::OnCommand(WPARAM wParam, LPARAM lParam)
 
 void CViewImage::PreCreate(CREATESTRUCT &cs)
 {
-	background = nullptr;
+ 
 }
 
 HWND image_hwnd;
