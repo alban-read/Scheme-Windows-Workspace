@@ -107,5 +107,61 @@ When using the repaint timer a script just needs to do its drawing and then swap
 
 Shows the effect of using (gswap 0).
 
+## Automating the step function
+
+In the code above we see that each step of the animation (for each frame created) is run by circle-step.
+
+This is normal for an animation or a game; to have a loop; that repeats for each frame.
+
+The problem is that running the step function literally in a loop; makes the timing variable; and also prevents any other Scheme functions from running.
+
+For this reason there is also a timer that will call a step function quickly automatically in the background.
+
+To use it change the code to look like this:-
+
+
+
+```Scheme
+(define every_step 
+	(lambda ()
+		(circle-step)
+      	(gc)
+      ))
+
+(set-every-timer 1000 60)
+
+```
+
+The function must be named  'every_step'; and in this case we call the tested circle-step function.
+
+The set-every-timer function here; is set to wait one second and then call the step function every 60 ms.
+
+The step function needs to be barebones; well-tested; simple and fast.
+
+It is used to only run the animation; check for keys; update animation state; it does not have the nice safe environment that you normally get when you are evaluating scheme.
+
+if there is an error; it will error n times a second; not be caught by any safety handlers and likely crash.
+
+The step function needs to complete quickly (it needs to be fast anyway to complete many frames a second.)
+
+Note I added a call to (gc) garbage collect; otherwise the garbage will rapidly build up from calling the function thousands of times; and you will run out of memory.
+
+Setting the times to 0 causes the timer to be stopped :-
+
+```
+(set-every-timer 0 0 )
+```
+
+The nice thing is that assuming the function does finish quickly; there is plenty of time left over to run other commands; only one command runs at a time; but commands from the evaluator can sneak into the spare time available.
+
+So for example while running the animation in the viewer; you will run out of circles; however you can start another set of circles moving by re-executing:-
+
+```Scheme
+(define circles 
+  (newcircles 700))
+```
+
+Although all the code is fast native code compiled by C or by Scheme; Windows GDI plus is not super fast. Faster computers are obviously better. In this case the speed of your computer dictates how many circles can be smoothly animated.
+
 
 

@@ -1,5 +1,6 @@
 ;; Simple animation in image view
-(set-repaint-timer 30)
+;; using the two timers
+
 (clr 800 600)
 
 ;; make a new circle
@@ -19,7 +20,7 @@
 
 ;; keep a list of circles
 (define circles 
-  (newcircles 700))
+  (newcircles 1000))
 
 ;; unjam any circle that is stuck	
 (define unstickv 
@@ -50,10 +51,14 @@
 	(gswap 0)
 	(set! circles (map move-circles circles))))
 
- 
-
 (define every_step 
 	(lambda ()
-		(circle-step)))
+		(circle-step)(gc)))
 
+;; timer refresh
+(set-repaint-timer 30)
+
+;; run every animation step on the timer
 (set-every-timer 1000 60)
+
+ 

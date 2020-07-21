@@ -286,6 +286,11 @@
     ((foreign-procedure "set_repaint_timer" (int) ptr) n)))
 
 
+(define every_step (lambda () '()))
+
+(define set-every-timer
+  (lambda (d p)
+    ((foreign-procedure "every" (int int) ptr) d p)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; simple graphics (some gdi plus commands)
