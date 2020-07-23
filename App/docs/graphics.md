@@ -4,26 +4,31 @@
 
 #### <a name="image-pane">The image pane</a>
 
-This displays an image; created typically by the GDI+ based drawing functions.
+Graphics commands can be used to draw lines and shapes that can be displayed in the image pane.
 
-This pane exists as way to interactively test scripts that draw 2D images.
+There are a couple of examples in the scripts folder; you can run them to do some drawing.  
 
-There are a couple of examples in the scripts folder; if you copy one and drop it onto the evaluator view it will draw a graphic. Also you can run through the examples here.
+Also you can try out the examples in the documentation.
 
 #### <a name="graphics-functions">Graphics functions</a>
 
-These functions work on a single bitmap in memory; it does not need to be visible.
+These functions work on an 'offscreen' image in memory; the image pane is just a way to display them.
 
-The image pane; when visible;  also display the bitmap as it is being drawn.
+You can also create drawings and save them to a file; without showing them in the image pane.
 
-Windows includes a 2D software; alpha blending graphics library;  that provides the drawing functions.
+Windows includes a graphics library (GDI+);  that provides these drawing functions.
 
- 
+####  Showing the image pane
 
-- Set the app to Docking Image Layout and an image view will be displayed; your graphics commands can be displayed there.
-- You can drag and drop an example from a scripts folder onto the Evaluator view; such as drawtree.ss which will draw a tree shape when evaluated.
-- Or select a function from the browser pane and shift-run it.
-- On  high DPI screens; it helps performance to keep the image pane; a reasonable size.
+- If you have set Docking to Browser Layout;  you can select the image pane to the right.
+- If not using the documentation: Set Docking to Image Layout.
+- You can drag and drop an example from the scripts folder to the Evaluator view; such as drawtree.ss which will draw a tree shape.
+- Or select a function from this browser documentation pane and shift-run it.
+
+#### Warning
+
+- On  high DPI screens; the image pane becomes very large.
+-  It helps performance to keep the image pane; a reasonable size; or just use a 1920x1080 screen mode.
 
 [contents](#contents)
 
@@ -35,9 +40,7 @@ Windows includes a 2D software; alpha blending graphics library;  that provides 
 
 ##### A fractal fern
 
-The Shell has an image viewer mode.
-
-You can interactively create images and display them in the viewer.
+You can select and execute (shift-return) this script to create a fern-like image.
 
 ```Scheme
 ;; fractal fern 
@@ -88,27 +91,17 @@ You can interactively create images and display them in the viewer.
 ;;
 ```
 
-The example displays a famous fractal fern.
-
-Select Docking Image Layout from the menu.
-
-Paste in the text; press .
-
-```
-<ctrl><enter>
-```
-
-Then select the (fern) command and press.
+ Select the (fern) command and press.
 
 ```
 <shift><enter>
 ```
 
- to progressively drawn more of the fern pattern.
+To progressively drawn more of the fern pattern.
 
 Using set-pixel is very slow; and not generally recommended. 
 
-There are commands to draw lines and rectangles that are faster.
+There are commands to draw lines and rectangles that are much faster.
 
 ## Graphics 2D commands
 
@@ -116,11 +109,10 @@ There are commands to draw lines and rectangles that are faster.
 - The shell app has a view that displays an image.
 - All graphics operations take place to a single **off-screen bitmap**.
 - The image is displayed when the **show** function is called.
-- The graphics functions are simple.
 
 ------
 
-There is one image bitmap at any time that these commands write on.
+There is a single active image that these commands draw on.
 
 ------
 
@@ -133,9 +125,13 @@ An image always has a background paper colour or gradient.
 Set the paper colour to an r,g,b,a (red,green,blue,alpha) value; then create a blank image
 
 ```scheme
-(paper 40 140 240 255) ;; paper color r,g,b, alpha
-(clr 640 320) ;; clear 640x320 image		
-(show) ;; show on screen
+;; paper color r,g,b, alpha
+(paper 40 140 240 255) 
+;; create and clear 640x320 image	
+(clr 640 320) 	
+;; show on screen
+(show) 
+
 ```
 
 Or set the gradient brush then create the blank image
@@ -152,14 +148,6 @@ Or set the gradient brush then create the blank image
 (show)
 ```
 
-To re-display a changed image on the image view
-
-```scheme
-(show) ;; show the image
-```
-
-------
-
 #### Save the image to a file
 
 ```scheme
@@ -169,15 +157,28 @@ To re-display a changed image on the image view
 
 ------
 
+#### Show the image on screen
+
+To re-display a changed image on the image view
+
+```scheme
+;; show the image
+(show) 
+```
+
+------
+
+#### 
+
 ### Colours
 
 - Colours are set for pens and for brushes.
-- The colours are set using red,green,blue, alpha values (0..255).
+- The colours are set using red, green, blue, and alpha values (0..255).
 - Alpha is used to blend.
 - There is one pen; set using **colour**.
-- A solid brush also has a colour; there is a paper brush; a fill brush and a gradient brush used by different commands.
+- A solid brush has a colour; there is a paper brush; a fill brush and a gradient brush used by different commands.
 - A linear gradient brush has two colours and an angle.
-- You set the relevant brushes using the **paper**, **fill** and **gradient** procedures.
+- You set the relevant paper, fill and gradient brushes using the **paper**, **fill** and **gradient** procedures.
 
 
 
@@ -185,13 +186,31 @@ To re-display a changed image on the image view
 
 ------
 
-### Drawing on an image
+### Drawing  
 
-The following commands draw onto the image.
+*Display a drawing with (show)*
 
-*Remember that no changes are displayed on the screen until you show the image*
+- Remember that no changes are displayed on the screen until you show the image
+- show swaps the active surface with the display surface; and tells the image pane to update.
 
-show swaps the active surface with the display surface; and then tells the image to update.
+The examples assume an image has been created.
+
+#### First create an image
+
+```Scheme
+;; paper color r,g,b, alpha
+(paper 40 140 240 255)
+
+;; clear 640x320 image	
+(clr 640 320) 
+
+;; show it
+(show)
+```
+
+An image has a paper colour and a size.
+
+
 
 ### Lines
 
@@ -205,6 +224,12 @@ A line has a colour and a pen width
 (draw-line 10 10 200 200) ;; draw a line
 (show)
 ```
+
+#### Shape Drawing
+
+The shape commands can draw an outline fill a shape gradient fill a shape or hatch fill a shape.
+
+The commands are draw-thing, fill-thing, gradient-thing and hatch-thing.
 
 #### Rectangle drawing
 
@@ -220,19 +245,16 @@ A line has a colour and a pen width
 ```scheme
 (colour 0 0 200 255) ;; blue 
 (pen-width 0.5) ;; narrow line
-(draw-ellipse 10 10 50 50) ;; x,y, width, height
+(draw-ellipse 80 10 50 50) ;; x,y, width, height
 (show)
 ```
 
 #### Pie Drawing
 
 ```scheme
- ;; paper color r,g,b, alpha
-(paper 40 140 240 255)
-
-;; clear 640x320 image	
-(clr 640 320) 	
-(colour 0 200 200 255) ;; set colour
+;; set colour
+(colour 0 200 200 255) 
+;; thick line
 (pen-width 8.0)
 ;; x,y,width,height,start,end
 (draw-pie 120 100 150 150 0 100) 
@@ -252,7 +274,7 @@ A line has a colour and a pen width
 
 ### Fill shapes
 
-A shape has a solid fill brush or a gradient fill brush
+A filled shape can have a solid brush a gradient brush or a hatch brush.
 
 #### Fill Rectangle
 
@@ -282,7 +304,8 @@ A circle is an ellipse; were w and h are the same.
 ```scheme
 ;; set solid fill brush color
 (fill 100 0 100 255) 
-(fill-pie 100 100 120 120) ;; x,y,w,h
+;; x,y,w,h, start, end 
+(fill-pie 100 100 120 120 0 100) 
 (show)
 ```
 
@@ -292,12 +315,13 @@ A circle is an ellipse; were w and h are the same.
 
 ```scheme
 (gradient
- 10 10 50 50    ;; rectangle
+ 10 10 50 50      ;; rectangle
  100 100 100 255  ;; colour 1
  200 200 100 255  ;; colour 2
- 45.0 		   ;; angle
+ 45.0 		      ;; angle
  #t )
-(gradient-rect 210 210 80 80) ;; x,y,w,h
+;; x,y,w,h
+(gradient-rect 210 210 80 80) 
 (show)
 ```
 
@@ -322,9 +346,9 @@ A circle is an ellipse; were w and h are the same.
  0 0 120 120    ;; rectangle
  10  0 100 255  ;; colour 1
  100 0 100 255  ;; colour 2
- 70.0 		   ;; angle
+ 70.0 		    ;; angle
  #t )
-(fill-pie 100 100 120 120 90 180) ;; x,y,w,h,start, end
+(gradient-pie 100 100 120 120 90 180) ;; x,y,w,h,start, end
 (show)
 ```
 

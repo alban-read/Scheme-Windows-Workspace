@@ -2,8 +2,6 @@
 
  [Index](Readme.html)  
 
-
-
 #### The Repaint timer
 
 There are three surfaces used by the image viewer; these are the display surface; the active surface and the screen surface. 
@@ -113,13 +111,11 @@ In the code above we see that each step of the animation (for each frame created
 
 This is normal for an animation or a game; to have a loop; that repeats for each frame.
 
-The problem is that running the step function literally in a loop; makes the timing variable; and also prevents any other Scheme functions from running.
+The problem is that running the step function literally in a loop; makes the timing of each frame variable depending on the work to do; and also prevents any other Scheme functions from running.
 
-For this reason there is also a timer that will call a step function quickly automatically in the background.
+For this reason there is also a timer that calls a step function automatically in the background and swaps the surfaces.
 
 To use it change the code to look like this:-
-
-
 
 ```Scheme
 (define every_step 
@@ -128,11 +124,13 @@ To use it change the code to look like this:-
       	(gc)
       ))
 
-(set-every-timer 1000 60)
+(set-every-timer 1000 60 0)
 
 ```
 
-The function must be named  'every_step'; and in this case we call the tested circle-step function.
+Also remove any (gswap n) functions as they now happen at the end of each step.
+
+The function must be named  'every_step'; and in this case it calls the tested circle-step function.
 
 The set-every-timer function here; is set to wait one second and then call the step function every 60 ms.
 
@@ -140,7 +138,7 @@ The step function needs to be barebones; well-tested; simple and fast.
 
 It is used to only run the animation; check for keys; update animation state; it does not have the nice safe environment that you normally get when you are evaluating scheme.
 
-if there is an error; it will error n times a second; not be caught by any safety handlers and likely crash.
+if there is an error; it will crash.
 
 The step function needs to complete quickly (it needs to be fast anyway to complete many frames a second.)
 
@@ -149,10 +147,10 @@ Note I added a call to (gc) garbage collect; otherwise the garbage will rapidly 
 Setting the times to 0 causes the timer to be stopped :-
 
 ```
-(set-every-timer 0 0 )
+(set-every-timer 0 0 0)
 ```
 
-The nice thing is that assuming the function does finish quickly; there is plenty of time left over to run other commands; only one command runs at a time; but commands from the evaluator can sneak into the spare time available.
+The nice thing is that assuming the function does finish quickly; there is plenty of time left over to run other commands; only one command runs at a time; but commands from the evaluator can sneak into the spare time available between steps.
 
 So for example while running the animation in the viewer; you will run out of circles; however you can start another set of circles moving by re-executing:-
 
@@ -161,7 +159,102 @@ So for example while running the animation in the viewer; you will run out of ci
   (newcircles 700))
 ```
 
-Although all the code is fast native code compiled by C or by Scheme; Windows GDI plus is not super fast. Faster computers are obviously better. In this case the speed of your computer dictates how many circles can be smoothly animated.
+Although all the code is fast; it is native code compiled by C or by Scheme; Windows GDI plus is designed for quality not speed.
+
+No software based rendering is very fast at drawing into a sixteen million colour display; let alone rendering that is meant to be accurate smooth and does alpha blending.
+
+Faster computers are obviously better at drawing things in software. 
+
+In this case the speed of your computer dictates how many circles can be redrawn in time.
+
+```Scheme
+;; Simple animation in image view
+;; using the two timers
+
+(clr 800 600)
+
+(define circlecount 1000)
+
+;; make a new circle
+(define newcircle
+  (lambda ()
+    (list
+      (list (random 800) (random 600))
+      (list (- 5 (random 10)) (- 5 (random 10)))
+      (list (random 255) (random 255) (random 255)))))
+
+;; make n new circles
+(define newcircles 
+  (lambda (n) 
+	(let ([l '()])
+	  (dotimes n 
+		(set! l (append l (list (newcircle))))) l)))
+
+;; keep a list of circles
+(define circles 
+  (newcircles circlecount))
+
+;; unjam any circle that is stuck	
+(define unstickv 
+ (lambda (v) 
+	(list (if (= (car v) 0) (- 5 (random 10)) (car v))
+		  (if (= (cadr v) 0) (- 5 (random 10)) (cadr v))))) 
+
+(define count-offscreen
+ (lambda ()
+	(let ([count 0])
+	 (for e in circles 
+	  (when 
+		(or 
+		 (> (caar e) 800) 
+		 (< (caar e) 0)
+		 (> (cadar e) 600) 
+		 (< (cadar e) 0))
+			(set! count (+ count 1))))  count ))) 
+			
+(define all-off 
+	(lambda ()
+	 (>= (count-offscreen) circlecount)))
 
 
+
+;; move all circles
+(define move-circles
+ (lambda (c)
+ (list (map + (car c)(cadr c)) (unstickv (cadr c)) (caddr c))))
+
+;; draw a circle
+(define drawcirc
+ (lambda (c) 
+	(apply fill (append (caddr c) (list 128)))
+	(apply colour (append (caddr c) (list 255)))
+	(pen-width 1.5)
+    (apply fill-ellipse (append (car c) (list 50 50)))
+	(apply draw-ellipse (append (car c) (list 50 50)))))
+
+;; perform one step
+(define circle-step
+ (lambda ()
+	(fill 0 0 0 255)
+	(fill-rect 0 0 800 600)
+	(map drawcirc circles)
+	(when (all-off) 
+		(set! circles 
+			(newcircles circlecount)))
+	(set! circles (map move-circles circles))))
+
+(define every_step 
+	(lambda ()
+		(circle-step)(gc)))
+
+;; timer refresh
+(set-repaint-timer 60)
+
+;; run every animation step on the timer
+(set-every-timer 1000 60 0)
+
+ 
+```
+
+Consider that to draw at 60FPS (the same as the standard slow monitor refresh) each step in the game has to finish in only 16ms; including the time to redraw the frame; this is why we have hardware accelerated graphics.  None the less; even in software; you can write a lot of fun 2D games on a fast computer.
 

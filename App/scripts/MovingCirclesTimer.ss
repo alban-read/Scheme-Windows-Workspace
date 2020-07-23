@@ -3,6 +3,8 @@
 
 (clr 800 600)
 
+(define circlecount 1000)
+
 ;; make a new circle
 (define newcircle
   (lambda ()
@@ -20,13 +22,31 @@
 
 ;; keep a list of circles
 (define circles 
-  (newcircles 1000))
+  (newcircles circlecount))
 
 ;; unjam any circle that is stuck	
 (define unstickv 
  (lambda (v) 
 	(list (if (= (car v) 0) (- 5 (random 10)) (car v))
 		  (if (= (cadr v) 0) (- 5 (random 10)) (cadr v))))) 
+
+(define count-offscreen
+ (lambda ()
+	(let ([count 0])
+	 (for e in circles 
+	  (when 
+		(or 
+		 (> (caar e) 800) 
+		 (< (caar e) 0)
+		 (> (cadar e) 600) 
+		 (< (cadar e) 0))
+			(set! count (+ count 1))))  count ))) 
+			
+(define all-off 
+	(lambda ()
+	 (>= (count-offscreen) circlecount)))
+
+
 
 ;; move all circles
 (define move-circles
@@ -49,6 +69,9 @@
 	(fill-rect 0 0 800 600)
 	(map drawcirc circles)
 	(gswap 0)
+	(when (all-off) 
+		(set! circles 
+			(newcircles circlecount)))
 	(set! circles (map move-circles circles))))
 
 (define every_step 
@@ -59,6 +82,6 @@
 (set-repaint-timer 30)
 
 ;; run every animation step on the timer
-(set-every-timer 1000 60)
+(set-every-timer 1000 60 0)
 
  

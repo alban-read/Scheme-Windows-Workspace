@@ -288,9 +288,10 @@
 
 (define every_step (lambda () '()))
 
+;; delay, period, mode (mode=0,1) 
 (define set-every-timer
-  (lambda (d p)
-    ((foreign-procedure "every" (int int) ptr) d p)))
+  (lambda (d p m)
+    ((foreign-procedure "every" (int int int) ptr) d p m)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; simple graphics (some gdi plus commands)
