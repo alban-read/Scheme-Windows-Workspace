@@ -756,11 +756,11 @@
 	 
 (define help 
  (lambda ()
-  (navigate (full-path "docs/readme.html"))))
+  (navigate (full-path "docs/welcome.html"))))
 
 (define welcome 
  (lambda ()
-  (navigate (full-path "docs/readme.html"))))
+  (navigate (full-path "docs/welcome.html"))))
 
 (define license 
  (lambda ()

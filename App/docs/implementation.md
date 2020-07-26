@@ -1,6 +1,6 @@
 ## Implementation
 
- [Index](Readme.html)  
+ [Index](welcome.html)  
 
 
 
@@ -88,7 +88,7 @@ As each scheme expression is invoked; a call is made to scheme on a scheme threa
 
 Scheme is a a garbage collected language; lots of little items get created all the time; and they are automatically deleted when no longer needed. Chez Scheme has the interesting and famous big bag of pages garbage collector.
 
-When using the App; the Apps threads are always active; but the scheme engine; is probably doing nothing a lot of the time; it is not running all the time in an idle loop; as it does when it runs in a terminal.
+When using the App; the Apps threads are always active while the scheme engine is probably doing nothing a lot of the time; it is not running all the time in an idle loop; as it does when it runs in a terminal.
 
 Periodically the App asks scheme (when it is idle) to wake up and do some garbage collection; this call actually triggers the heuristics in the Scheme engine; that triggers collection after N function calls. 
 
@@ -169,13 +169,13 @@ It can be harder to link in all the dependencies; the good news is that I choose
 
 You need to install vpckg; download and compile a couple of libraries; (re2, scilexer, fmt) and visual studio will find it.
 
-To compile scheme; you need scheme; all the scheme parts; can be taken directly from the Windows binary Chez Scheme installer; I am using the non threaded x64 version; the Scheme parts can be completely unmodified; however the version shipped has a change to catch the escape key.
+To compile scheme; you need scheme; all the scheme parts; can be taken directly from the Windows binary Chez Scheme installer; I am using the **non threaded x64 version**; the Scheme parts can be completely unmodified; however the version shipped has a change to catch the escape key.
 
 #### Supporting more threads
 
 I would like to support the threaded version of Scheme; which was tagged as experimental for windows; when this project started.
 
-I have written some multi-threaded windows applications before; and the combination of windows, threads and C/C++ is not a safe one; especially when it comes to *not crashing and losing all of your work*; which is a feature I value even more highly than speed.
+I have written some multi-threaded windows applications before; and the combination of windows, threads and C/C++ is not safe. Especially when it comes to *not crashing and losing all of your work*; which is a feature I value even more highly than speed.
 
 Obviously we can run more than one process; the scheme.exe file can run scripts; so spawning multiple processes is very possible; running multiple scheme engines in their own threads is also interesting to explore; although it looks difficult.
 
@@ -203,6 +203,9 @@ Or if you are in business 'stop wasting money.'
 
 July 2020 minimal edition.
 
+- Enhanced the graphics image pane.
+- Added timers for animations.
+
 -  Tidied up a bit.
 -  Ripped out reams of library code; including a giant DLL glue library full of things only I am interested in.
 -  Redirected more functions that expect a terminal (tracing, timing, statistics.)
@@ -222,19 +225,13 @@ The best speed comes from the use of compiled scheme library code; see the user 
 
 Even scheme that is just evaluated at the top level is very fast.
 
-
-
 <https://github.com/cisco/ChezScheme>
 
-The C++ is compiled into the app;  and tends to be quick.   
-
-Code defined in a scheme library; is faster than code in the top-level; although all code is compiled; the top level is not a static environment so is slower.
-
-The time function shown above only works in the terminal.
+Code defined in a scheme library; is faster than code in the top-level; although all code is compiled; the top level is not a static environment so it is slower.
 
 The App notes the time; the last command took to run; on the right of the status bar.
 
- You can also use the scheme time function to time a function.
+ You can also use the scheme time function to time your functions.
 
 
 

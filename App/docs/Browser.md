@@ -1,4 +1,4 @@
- [Index](Readme.html)  
+ [Index](welcome.html)  
 
 # Browser pane
 

@@ -1,3 +1,5 @@
+ [Index](welcome.html)  
+
 ## Timers
 
 Normally when you enter Scheme in the evaluator pane; and execute it; it runs right away.

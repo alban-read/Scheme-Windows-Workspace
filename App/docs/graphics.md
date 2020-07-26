@@ -1,6 +1,6 @@
 ## Graphics
 
- [Index](Readme.html)  
+ [Index](welcome.html)  
 
 #### <a name="image-pane">The image pane</a>
 
@@ -30,7 +30,7 @@ Windows includes a graphics library (GDI+);  that provides these drawing functio
 - On  high DPI screens; the image pane becomes very large.
 -  It helps performance to keep the image pane; a reasonable size; or just use a 1920x1080 screen mode.
 
-[contents](#contents)
+ 
 
 ------
 
@@ -180,7 +180,7 @@ To re-display a changed image on the image view
 
 
 
-[contents](#contents)
+ 
 
 ------
 
@@ -600,7 +600,7 @@ Mode 3 is handy when working on high DPI screens.
  
 ```
 
-## Animation
+## Animation 
 
 #### The Repaint timer
 
@@ -637,17 +637,6 @@ The repaint timer when enabled overdraws only the changing 'display surface' par
 ;;
 ```
 
-When using the repaint timer a script just needs to do its drawing and then swap over the active and display surfaces (using gswap.) 
 
-(gswap 1) copies the current active surface to the new one; so that a picture builds incrementally.
 
-(gswap 0) switches surfaces without copying the latest data; used for animation; where every scene is completely redrawn.
-
- The display timer takes care of updating the image viewer.
-
-This should allow for some simple animations.
-
-(set-repaint-timer 0) 
-
-Turns off the repaint timer.
-
+[Animation](Animation.html)

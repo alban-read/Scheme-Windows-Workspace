@@ -1,6 +1,6 @@
 # Workspace - tiles
 
- [Index](Readme.html)  
+ [Index](welcome.html)  
 
 ------
 

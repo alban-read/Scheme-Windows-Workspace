@@ -1,10 +1,8 @@
 ## Animation
 
- [Index](Readme.html)  [Timers](Timers.html) [Textures](Images and Textures.html)
+  [Index](welcome.html)    [Timers](Timers.html) [Textures](Images and Textures.html)
 
-
-
-The general idea with computer animation is you show the user the latest frame and while they are looking at that, you draw the next one; behind the scenes.
+The general idea with computer animation is you show the viewer the latest frame and while they are looking at that, you draw the next one; behind the scenes.
 
 #### The Repaint timer
 

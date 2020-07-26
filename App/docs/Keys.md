@@ -1,3 +1,5 @@
+ [Index](welcome.html)  
+
 ## Keys in the text panes
 
 The text panes I believe like a normal windows app.

@@ -1,3 +1,5 @@
+ [Index](welcome.html)  
+
 #### A note for old timers who miss the 8bit days
 
 ***Some old timers miss the constraints of the old 8bit days***
@@ -14,5 +16,6 @@ The language used here was invented in the 1970s.
 
 ***Programming is just so easy now; it has become boring***
 
-Sure; then write a great game or even a small demo.
+Sure; then write a great game; an application, or even a small demo.
 
+This is not meant as a criticism; just a reminder that computers can still be fun; enjoy them.

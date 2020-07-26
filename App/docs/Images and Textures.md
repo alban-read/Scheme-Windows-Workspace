@@ -1,4 +1,6 @@
-# Images and Textures for speed
+ [Index](welcome.html)  
+
+# Images and Textures for animation
 
 In the animation section we moved some circles; circles are pretty simple; and we just drew each one.
 
