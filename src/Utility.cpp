@@ -2006,12 +2006,64 @@ namespace GlobalGraphics
 	Gdiplus::SolidBrush* solid_brush = nullptr;
 	Gdiplus::SolidBrush* paper_brush = nullptr;
 	Gdiplus::HatchBrush* hatch_brush = nullptr;
+	Gdiplus::TextureBrush* texture_brush = nullptr;
+	Gdiplus::TextureBrush* tiled_texture_brush = nullptr;
 	Gdiplus::LinearGradientBrush* gradient_brush = nullptr;
 	Gdiplus::Color foreground_colour;
 	Gdiplus::Matrix* transform_matrix = new Gdiplus::Matrix();
 	Gdiplus::SmoothingMode quality_mode = Gdiplus::SmoothingModeHighQuality;
 	Gdiplus::Region* clip_region;
 	float _pen_width = static_cast<float>(1.2);
+
+
+	// our table of textures
+	const int textures_max = 1024;
+	void* textures[textures_max];
+	void init_textures()
+	{
+		for (int i = 0; i < textures_max; i++)
+		{
+			textures[i] = nullptr;
+		}
+	}
+
+	int add_texture(void* d)
+	{
+		for (auto i = 0; i < textures_max; i++)
+		{
+			if (textures[i] == nullptr)
+			{
+				textures[i] = d;
+				return i;
+			}
+		}
+		return 0;
+	}
+	extern "C" __declspec(dllexport) ptr isTexture(void* d)
+	{
+		for (auto i = 0; i < textures_max; i++)
+		{
+			if (textures[i] == d)
+			{
+				return Strue;
+			}
+		}
+		return Sfalse;
+	}
+
+	extern "C" __declspec(dllexport) void Destroy_texture(void* d)
+	{
+		for (auto i = 0; i < textures_max; i++)
+		{
+			if (textures[i] == d)
+			{
+				delete static_cast<Gdiplus::TextureBrush * > (d);
+				textures[i] = nullptr;
+				return;
+			}
+		}
+		return;
+	}
 
 	extern "C" __declspec(dllexport) ptr QUALITYHIGH()
 	{
@@ -2194,7 +2246,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		g2.SetClip(clip_region, CombineModeReplace);
 		g2.SetSmoothingMode(quality_mode);
 		g2.SetTransform(transform_matrix);
@@ -2212,7 +2264,7 @@ namespace GlobalGraphics
 		{
 			return Snil;
 		}
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		g2.SetClip(clip_region, CombineModeReplace);
 		g2.SetSmoothingMode(quality_mode);
 		g2.SetTransform(transform_matrix);
@@ -2356,7 +2408,7 @@ namespace GlobalGraphics
 			solid_brush = new Gdiplus::SolidBrush(Gdiplus::Color(255, 0, 0, 0));
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 			g2.FillRectangle(solid_brush, x, y, w, h);
 		return Strue;
@@ -2373,7 +2425,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 			g2.FillRectangle(gradient_brush, x, y, w, h);
 		return Strue;
@@ -2390,9 +2442,60 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 			g2.FillRectangle(hatch_brush, x, y, w, h);
+		return Strue;
+	}
+
+	extern "C" __declspec(dllexport) ptr BRUSHRECT(const int x, const int y, const int w, const int h )
+	{
+		if (active_surface == nullptr)
+		{
+			return Snil;
+		}
+		if (texture_brush == nullptr)
+		{
+			return Snil;
+		}
+ 
+		Gdiplus::Graphics g2(active_surface);
+		g2.TranslateTransform(x, y);
+		g2.FillRectangle(texture_brush, 0, 0, w, h);
+		return Strue;
+	}
+
+	// looks up texture made earlier
+	extern "C" __declspec(dllexport) ptr BRUSHRECTID(const int id, const int x, const int y, const int w, const int h)
+	{
+		if (active_surface == nullptr)
+		{
+			return Snil;
+		}
+		Gdiplus::TextureBrush* texture_brush = (Gdiplus::TextureBrush *)textures[id];
+		if (texture_brush != nullptr) {
+			Gdiplus::Graphics g2(active_surface);
+			g2.TranslateTransform(x, y);
+			g2.FillRectangle(texture_brush, 0, 0, w, h);
+			return Strue;
+		}
+		return Sfalse;
+	}
+
+
+	extern "C" __declspec(dllexport) ptr TILEDRECT(const int x, const int y, const int w, const int h)
+	{
+		if (active_surface == nullptr)
+		{
+			return Snil;
+		}
+		if (tiled_texture_brush == nullptr)
+		{
+			return Snil;
+		}
+
+		Gdiplus::Graphics g2(active_surface);
+		g2.FillRectangle(tiled_texture_brush, x, y, w, h);
 		return Strue;
 	}
 
@@ -2407,11 +2510,31 @@ namespace GlobalGraphics
 			solid_brush = new Gdiplus::SolidBrush(Gdiplus::Color(255, 0, 0, 0));
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 			g2.FillEllipse(solid_brush, x, y, w, h);
 		return Strue;
 	}
+
+	extern "C" __declspec(dllexport) ptr BRUSHELLIPSE(const int x, const int y, const int w, const int h)
+	{
+		if (active_surface == nullptr)
+		{
+			return Snil;
+		}	
+
+		if (texture_brush == nullptr)
+		{
+			return Snil;
+		}
+	 
+		Gdiplus::Pen pen(foreground_colour, _pen_width);
+		Gdiplus::Graphics g2(active_surface);
+		CLIP_SMOOTH_TRANSFORM
+			g2.FillEllipse(texture_brush, x, y, w, h);
+		return Strue;
+	}
+
 
 	extern "C" __declspec(dllexport) ptr FILLGRADIENTELLIPSE(const int x, const int y, const int w, const int h)
 	{
@@ -2425,7 +2548,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 			g2.FillEllipse(gradient_brush, x, y, w, h);
 		return Strue;
@@ -2442,7 +2565,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 			g2.FillEllipse(hatch_brush, x, y, w, h);
 		return Strue;
@@ -2460,7 +2583,7 @@ namespace GlobalGraphics
 			solid_brush = new Gdiplus::SolidBrush(Gdiplus::Color(255, 0, 0, 0));
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 			g2.FillPie(solid_brush, x, y, w, h, i, j);
 		return Strue;
@@ -2478,7 +2601,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 		g2.FillPie(gradient_brush, x, y, w, h, i, j);
 		return Strue;
@@ -2496,7 +2619,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 		g2.FillPie(hatch_brush, x, y, w, h, i, j);
 		return Strue;
@@ -2509,7 +2632,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 		g2.DrawRectangle(&pen, x, y, w, h);
 		return Strue;
@@ -2523,7 +2646,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 		g2.DrawArc(&pen, x, y, w, h, i, j);
 		return Strue;
@@ -2536,7 +2659,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 		g2.DrawEllipse(&pen, x, y, w, h);
 		return Strue;
@@ -2550,7 +2673,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 		g2.DrawPie(&pen, x, y, w, h, i, j);
 		return Strue;
@@ -2563,7 +2686,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(foreground_colour, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 		g2.DrawLine(&pen, x, y, x0, y0);
 		return Strue;
@@ -2576,7 +2699,7 @@ namespace GlobalGraphics
 			return Snil;
 		}
 		Gdiplus::Pen pen(gradient_brush, _pen_width);
-		Graphics g2(active_surface);
+		Gdiplus::Graphics g2(active_surface);
 		CLIP_SMOOTH_TRANSFORM
 		g2.DrawLine(&pen, x, y, x0, y0);
 		return Strue;
@@ -2654,6 +2777,35 @@ namespace GlobalGraphics
 		return Strue;
 	}
 
+	extern "C" __declspec(dllexport) ptr
+		SETTEXTUREBRUSH(Gdiplus::Image* image)
+	{
+		UINT o_height = image->GetHeight();
+		UINT o_width = image->GetWidth();
+		texture_brush = new Gdiplus::TextureBrush(image, (Gdiplus::WrapMode)4, 0, 0, o_width, o_height);
+		return Strue;
+	}
+
+	extern "C" __declspec(dllexport) int MAKETEXTUREBRUSH(Gdiplus::Image * image)
+	{
+		UINT o_height = image->GetHeight();
+		UINT o_width = image->GetWidth();
+		int id = add_texture(new Gdiplus::TextureBrush(image, (Gdiplus::WrapMode)4, 0, 0, o_width, o_height));
+		return id;
+	}
+
+
+	extern "C" __declspec(dllexport) ptr SETTILEDTEXTUREBRUSH(Gdiplus::Image * image, int mode)
+	{
+		if (tiled_texture_brush != nullptr)
+		{
+			delete tiled_texture_brush;
+		}
+		tiled_texture_brush = new Gdiplus::TextureBrush(image, (Gdiplus::WrapMode)mode);
+		return Strue;
+	}
+
+
 	extern "C" __declspec(dllexport) ptr PAPER(const int r, const int g, const int b, const int a)
 	{
 		if (paper_brush != nullptr)
@@ -2720,9 +2872,7 @@ namespace GlobalGraphics
 		return Strue;
 	}
 
-	// swap the two buffers; if n=1 copy old to new; preserve progress.
-	extern "C" __declspec(dllexport) ptr SWAP(int n) {
-
+	void swap_buffers(int n) {
 		WaitForSingleObject(g_image_rotation_mutex, INFINITE);
 		if (n > 0) { // copy active surface to display surface.
 			Gdiplus::Graphics g(display_surface);
@@ -2736,9 +2886,13 @@ namespace GlobalGraphics
 		temp_surface = active_surface;
 		active_surface = display_surface;
 		display_surface = temp_surface;
-	
+
 		ReleaseMutex(g_image_rotation_mutex);
-		Sleep(1);
+	}
+	// swap the two buffers; if n=1 copy old to new; preserve progress.
+	extern "C" __declspec(dllexport) ptr SWAP(int n) {
+
+		swap_buffers(n);
 		return Strue;
 	}
 
@@ -2766,6 +2920,17 @@ namespace GlobalGraphics
 		graphics.DrawImage(bmp, 0, 0, n_width, n_height);
 		return newBitmap;
 	}
+
+	extern "C" __declspec(dllexport) Gdiplus::Image * __stdcall CLONEIMAGE(Gdiplus::Image * image)
+	{
+		UINT o_height = image->GetHeight();
+		UINT o_width = image->GetWidth();
+		Gdiplus::Image* new_image = new Gdiplus::Bitmap(o_height, o_width, PixelFormat32bppARGB);
+		Gdiplus::Graphics graphics(new_image);
+		graphics.DrawImage(image, 0, 0, o_width, o_width);
+		return new_image;
+	}
+
 
 	extern "C" __declspec(dllexport) Gdiplus::Image * __stdcall RESIZEDCLONEIMAGE(Gdiplus::Image * image, int w, int h)
 	{
@@ -2925,15 +3090,18 @@ namespace GlobalGraphics
 	{
 		if (surface != nullptr)
 		{
+			WaitForSingleObject(g_image_rotation_mutex, INFINITE);
 			active_surface = surface;
+			ReleaseMutex(g_image_rotation_mutex);
 		}
 		return Strue;
 	}
 
 	extern "C" __declspec(dllexport) void* __stdcall MAKESURFACE(int w, int h)
 	{
-		auto new_surface = new Gdiplus::Bitmap(w, h, PixelFormat32bppRGB);
+		auto new_surface = new Gdiplus::Bitmap(w, h, PixelFormat32bppARGB);
 		Gdiplus::Graphics g2(new_surface);
+		paper_brush = new Gdiplus::SolidBrush(Gdiplus::Color(0, 0, 0, 0));
 		g2.FillRectangle(paper_brush, 0, 0, w, h);
 		return(void*)new_surface;
 	}
@@ -2945,7 +3113,22 @@ namespace GlobalGraphics
 	}
 
 	extern "C" __declspec(dllexport)  void* __stdcall get_surface() {
-		return active_surface;
+		WaitForSingleObject(g_image_rotation_mutex, INFINITE);
+		auto x = active_surface;
+		ReleaseMutex(g_image_rotation_mutex);
+		return x;
+	}
+
+	extern "C" __declspec(dllexport)  ptr __stdcall get_texture_brush() {
+		auto x = texture_brush;
+		return x;
+	}
+
+	extern "C" __declspec(dllexport)  ptr __stdcall set_texture_brush( Gdiplus::TextureBrush* x) {
+	 
+		texture_brush=x;
+ 
+		return Strue;
 	}
 
 
@@ -2977,15 +3160,22 @@ void _init_graphics() {
 	Sforeign_symbol("PENWIDTH", static_cast<ptr>(GlobalGraphics::PENWIDTH));
 	Sforeign_symbol("SOLIDBRUSH", static_cast<ptr>(GlobalGraphics::SOLIDBRUSH));
 	Sforeign_symbol("SETHATCHBRUSH", static_cast<ptr>(GlobalGraphics::SETHATCHBRUSH));
+	Sforeign_symbol("SETTEXTUREBRUSH", static_cast<ptr>(GlobalGraphics::SETTEXTUREBRUSH));
+	Sforeign_symbol("MAKETEXTUREBRUSH", static_cast<ptr>(GlobalGraphics::MAKETEXTUREBRUSH));
+	Sforeign_symbol("SETTILEDTEXTUREBRUSH", static_cast<ptr>(GlobalGraphics::SETTILEDTEXTUREBRUSH));
 	Sforeign_symbol("GRADIENTBRUSH", static_cast<ptr>(GlobalGraphics::GRADIENTBRUSH));
 	Sforeign_symbol("GRADIENTSHAPE", static_cast<ptr>(GlobalGraphics::GRADIENTSHAPE));
 	Sforeign_symbol("PAPER", static_cast<ptr>(GlobalGraphics::PAPER));
 	Sforeign_symbol("DRAWRECT", static_cast<ptr>(GlobalGraphics::DRAWRECT));
+	Sforeign_symbol("BRUSHRECT", static_cast<ptr>(GlobalGraphics::BRUSHRECT));
+	Sforeign_symbol("BRUSHRECTID", static_cast<ptr>(GlobalGraphics::BRUSHRECTID));
+	Sforeign_symbol("TILEDRECT", static_cast<ptr>(GlobalGraphics::TILEDRECT));
 	Sforeign_symbol("FILLSOLIDRECT", static_cast<ptr>(GlobalGraphics::FILLSOLIDRECT));
 	Sforeign_symbol("REALFILLSOLIDRECT", static_cast<ptr>(GlobalGraphics::REALFILLSOLIDRECT));
 	Sforeign_symbol("FILLGRADIENTRECT", static_cast<ptr>(GlobalGraphics::FILLGRADIENTRECT));
 	Sforeign_symbol("FILLHATCHRECT", static_cast<ptr>(GlobalGraphics::FILLHATCHRECT));
 	Sforeign_symbol("DRAWELLIPSE", static_cast<ptr>(GlobalGraphics::DRAWELLIPSE));
+	Sforeign_symbol("BRUSHELLIPSE", static_cast<ptr>(GlobalGraphics::BRUSHELLIPSE));
 	Sforeign_symbol("FILLSOLIDELLIPSE", static_cast<ptr>(GlobalGraphics::FILLSOLIDELLIPSE));
 	Sforeign_symbol("FILLGRADIENTELLIPSE", static_cast<ptr>(GlobalGraphics::FILLGRADIENTELLIPSE));
 	Sforeign_symbol("FILLHATCHELLIPSE", static_cast<ptr>(GlobalGraphics::FILLHATCHELLIPSE));
@@ -3028,6 +3218,7 @@ void _init_graphics() {
 	Sforeign_symbol("DISPLAYSURFACE", static_cast<ptr>(GlobalGraphics::DISPLAYSURFACE));
 	Sforeign_symbol("DISPLAYACTIVE", static_cast<ptr>(GlobalGraphics::DISPLAYACTIVE));
 	Sforeign_symbol("RESIZEDCLONEDBITMAP", static_cast<ptr>(GlobalGraphics::RESIZEDCLONEDBITMAP));
+	Sforeign_symbol("CLONEIMAGE", static_cast<ptr>(GlobalGraphics::CLONEIMAGE));
 	Sforeign_symbol("RESIZEDCLONEIMAGE", static_cast<ptr>(GlobalGraphics::RESIZEDCLONEIMAGE));
 	Sforeign_symbol("RESIZEDCLONEDBITMAP", static_cast<ptr>(GlobalGraphics::RESIZEDCLONEDBITMAP));
 	Sforeign_symbol("ROTATEDCLONEDIMAGE", static_cast<ptr>(GlobalGraphics::ROTATEDCLONEDIMAGE));
@@ -3037,6 +3228,8 @@ void _init_graphics() {
 	Sforeign_symbol("SCALEDROTATEDIMAGETOSURFACE", static_cast<ptr>(GlobalGraphics::SCALEDROTATEDIMAGETOSURFACE));
 	Sforeign_symbol("LOADTOSURFACE", static_cast<ptr>(GlobalGraphics::LOADTOSURFACE));
 	Sforeign_symbol("get_surface", static_cast<ptr>(GlobalGraphics::get_surface));
+	Sforeign_symbol("get_texture_brush", static_cast<ptr>(GlobalGraphics::get_texture_brush));
+	Sforeign_symbol("set_texture_brush", static_cast<ptr>(GlobalGraphics::set_texture_brush));
 }
 
 namespace Assoc

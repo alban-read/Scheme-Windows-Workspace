@@ -84,7 +84,8 @@ using namespace Gdiplus;
 // IO streams
 #pragma comment(lib, "msvcprtd.lib")
  
-ptr every(int delay, int period);
+ptr every(int delay, int period, int mode, ptr p);
+ptr after(int delay, ptr p);
 
 namespace Text {
 	extern ptr utf8_string_separated_to_list(char* s, const char sep);
@@ -1459,59 +1460,12 @@ __declspec(dllexport) ptr GRACTIVATE()
 	return Strue;
 }
 
-// This so does not work; even slightly
-void redirect_io_to_console()
-{
-	// Create a console for this application
-	const auto console_wnd = GetConsoleWindow();
-	DWORD dw_process_id;
-	GetWindowThreadProcessId(console_wnd, &dw_process_id);
-	if (GetCurrentProcessId() == dw_process_id)
-	{
-	}
-	else
-	{
-		AllocConsole();
-	}
-	// Get STDOUT handle
-	auto console_output = GetStdHandle(STD_OUTPUT_HANDLE);
-	const auto system_output = _open_osfhandle(intptr_t(console_output), _O_TEXT);
-	auto c_output_handle = _fdopen(system_output, "w");
-
-	// Get STDERR handle
-	auto console_error = GetStdHandle(STD_ERROR_HANDLE);
-	const auto system_error = _open_osfhandle(intptr_t(console_error), _O_TEXT);
-	auto c_error_handle = _fdopen(system_error, "w");
-
-	// Get STDIN handle
-	auto console_input = GetStdHandle(STD_INPUT_HANDLE);
-	const auto system_input = _open_osfhandle(intptr_t(console_input), _O_TEXT);
-	auto c_input_handle = _fdopen(system_input, "r");
-
-	//make cout, wcout, cin, wcin, wcerr, cerr, wclog and clog point to console as well
-	std::ios::sync_with_stdio(true);
-
-	// Redirect the CRT standard input, output, and error handles to the console
-	freopen_s(&c_input_handle, "CONIN$", "r", stdin);
-	freopen_s(&c_output_handle, "CONOUT$", "w", stdout);
-	freopen_s(&c_error_handle, "CONOUT$", "w", stderr);
-
-	std::wcout.clear();
-	std::cout.clear();
-	std::wcerr.clear();
-	std::cerr.clear();
-	std::wcin.clear();
-	std::cin.clear();
-}
-
 
 static bool coinitialized = false;
 
 static void custom_init()
 {
 }
-
-
 
 void register_boot_file(const char *boot_file, bool& already_loaded)
 {
@@ -1543,11 +1497,12 @@ void load_script_ifexists(const char* script_relative)
 
 
 DWORD WINAPI execstartup(LPVOID cmd);
+// crash out here
 void abnormal_exit() 
 {
 	MessageBox(nullptr,
-		L"The Scheme engine has died.",
-		L"Sorry to say ChezScheme has died and taken us with it.",
+		L"Fatal error",
+		L"Sorry to say; the App has died.",
 		MB_OK | MB_ICONERROR);
 	exit(1);
 }
@@ -1613,6 +1568,7 @@ DWORD WINAPI execstartup(LPVOID cmd)
 		Sforeign_symbol("graphics_keys", static_cast<ptr>(graphics_keys));
 
 		Sforeign_symbol("every", static_cast<ptr>(every));
+		Sforeign_symbol("after", static_cast<ptr>(after));
  
 		// load scripts
 		load_script_ifexists("\\scripts\\base.ss");

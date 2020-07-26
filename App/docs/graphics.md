@@ -106,13 +106,13 @@ There are commands to draw lines and rectangles that are much faster.
 ## Graphics 2D commands
 
 - For 2D graphics Windows GDI+ provides smooth anti-aliased lines.
-- The shell app has a view that displays an image.
-- All graphics operations take place to a single **off-screen bitmap**.
-- The image is displayed when the **show** function is called.
+- The app has a pane that displays an image.
+- All graphics operations draw onto the active surface which is an **off-screen bitmap**.
+- An image is displayed when the **show** function is called.
 
 ------
 
-There is a single active image that these commands draw on.
+There is a single active surface that all these commands draw on.
 
 ------
 
@@ -166,11 +166,9 @@ To re-display a changed image on the image view
 (show) 
 ```
 
-------
 
-#### 
 
-### Colours
+## Colours
 
 - Colours are set for pens and for brushes.
 - The colours are set using red, green, blue, and alpha values (0..255).
@@ -285,6 +283,61 @@ A filled shape can have a solid brush a gradient brush or a hatch brush.
 (fill-rect 100 100 50 50)
 (show)
 ```
+
+#### Hatch fill rectangles
+
+```Scheme
+;; lets go for a black background
+(paper 0 0 0 255)
+;; clear 640x320 image	
+(clr 640 320) 
+
+;; hatch brush has a style and two colours
+(define yellow '(255 255 85 255))
+(define orange '(230 109 25 255))
+(define blue '(0 0 200 255))
+(define gray '(100 100 100 255))
+(define DottedDiamond '(44))
+(define HorizontalBrick '(39))
+(define Shingle '(45))
+
+;; set the hatch brush style and colours
+(apply hatch 
+ (append DottedDiamond yellow blue))
+;; set the drawing colour
+(apply colour yellow)
+(pen-width 1.0)
+
+;; rectangle position and size
+(define my-rectangle '(10 10 50 50))
+
+;; first sample
+(apply hatch-rect my-rectangle )
+(apply draw-rect my-rectangle)
+(show)
+
+;; try another pattern in a second
+(after 1000
+ (lambda () 
+  (apply hatch 
+   (append HorizontalBrick yellow orange))
+  (apply hatch-rect my-rectangle )
+  (apply draw-rect my-rectangle)
+  (show)))
+
+;; try another pattern in two seconds
+(after 2000
+ (lambda () 
+  (apply hatch 
+   (append Shingle blue gray))
+  (apply hatch-rect my-rectangle )
+  (apply draw-rect my-rectangle)
+  (show)))
+
+
+```
+
+*This also shows one way to manage these long argument sequences.*
 
 #### Fill Ellipse
 

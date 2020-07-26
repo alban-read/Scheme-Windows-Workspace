@@ -286,12 +286,20 @@
     ((foreign-procedure "set_repaint_timer" (int) ptr) n)))
 
 
-(define every_step (lambda () '()))
-
-;; delay, period, mode (mode=0,1) 
+;; delay, period, mode (mode=0,1)  f
+;; runs every_step after d ms; every m ms.
+(define set-every-function
+  (lambda (d p m f)
+    ((foreign-procedure "every" (int int int ptr) ptr) d p m f)))
+		
 (define set-every-timer
-  (lambda (d p m)
-    ((foreign-procedure "every" (int int int) ptr) d p m)))
+ (lambda (d p m)
+	(set-every-function d p m  every_step )))
+	
+;; run p after n 
+(define after 
+	(lambda (d n) 
+		  ((foreign-procedure "after" (int ptr) ptr) d n)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; simple graphics (some gdi plus commands)
@@ -344,7 +352,17 @@
  (lambda (a r g b)
    ((foreign-procedure "SOLIDBRUSH"
     (int int int int) ptr) a r g b)))
+	
+(define texture
+ (lambda (i)
+   ((foreign-procedure "SETTEXTUREBRUSH"
+    (void*) ptr) i)))
 
+(define make-texture
+ (lambda (i)
+   ((foreign-procedure "MAKETEXTUREBRUSH"
+    (void*) int) i)))
+	
 (define hatch
  (lambda (i a r g b a0 r0 g0 b0 )
    ((foreign-procedure "SETHATCHBRUSH"
@@ -382,6 +400,17 @@
  (lambda (x y w h)
    ((foreign-procedure "FILLSOLIDRECT"
     (int int int int) ptr) x y w h)))
+	
+(define brush-rect
+ (lambda (x y w h)
+   ((foreign-procedure "BRUSHRECT"
+    (int int int int) ptr) x y w h)))
+	
+(define rect-blit 
+ (lambda (id x y w h )
+   ((foreign-procedure "BRUSHRECTID"
+    (int int int int int) ptr) id x y w h  )))
+
 
 (define rfill-rect
  (lambda (x y w h)
@@ -406,6 +435,11 @@
 (define fill-ellipse
  (lambda (x y w h)
    ((foreign-procedure "FILLSOLIDELLIPSE"
+    (int int int int) ptr) x y w h)))
+
+(define brush-ellipse
+ (lambda (x y w h)
+   ((foreign-procedure "BRUSHELLIPSE"
     (int int int int) ptr) x y w h)))
 
 (define gradient-ellipse
@@ -551,6 +585,12 @@
 	
 ;; dangerous use of void* to bitmaps and images follows.
 	
+(define clone-image
+ (lambda (i)
+   ((foreign-procedure "CLONEIMAGE"
+    (void* ) void*) i)))	
+		
+	
 (define clone-resized-bitmap
  (lambda (b w h )
    ((foreign-procedure "RESIZEDCLONEDBITMAP"
@@ -617,10 +657,22 @@
    ((foreign-procedure "LOADIMAGE"
     (string) void*) f)))	
 
-(define get-background
+(define get-active
  (lambda ()
    ((foreign-procedure "get_surface"
     () void*) )))	
+
+
+(define get-texture 
+ (lambda ()
+   ((foreign-procedure "get_texture_brush"
+    () void*) )))	
+	
+	
+(define set-texture 
+ (lambda (b)
+   ((foreign-procedure "set_texture_brush"
+    (void*) ptr) b)))		
 
 ;; used to track keys in graphics window
 (define graphics-keys

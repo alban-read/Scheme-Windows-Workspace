@@ -26,6 +26,7 @@
     (define draw-a-line 
         (lambda (x y x1 y1 s) 
           (pen-width (exact->inexact s))
+		  (gswap 1)
           (draw-line 
             (inexact->exact (round x))
             (inexact->exact (round y))
@@ -40,6 +41,6 @@
     (paper 15 90 120 255)
     (clr 640 520) 
     (map get-line tree)
-	(show)))
+	(gswap 1)))
 ;;
 (draw-tree)

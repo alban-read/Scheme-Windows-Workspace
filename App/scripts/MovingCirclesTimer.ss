@@ -68,20 +68,17 @@
 	(fill 0 0 0 255)
 	(fill-rect 0 0 800 600)
 	(map drawcirc circles)
-	(gswap 0)
 	(when (all-off) 
 		(set! circles 
 			(newcircles circlecount)))
 	(set! circles (map move-circles circles))))
-
-(define every_step 
-	(lambda ()
-		(circle-step)(gc)))
-
+ 
 ;; timer refresh
 (set-repaint-timer 30)
 
-;; run every animation step on the timer
-(set-every-timer 1000 60 0)
+;; run circle step on the repeating timer.
+(set-every-function 1000 60 0 
+		(lambda ()
+		  (circle-step)(gc)))
 
  

@@ -39,9 +39,9 @@ void CMainFrame::load_image_dockers()
 {
 	const DWORD dw_style = DS_CLIENTEDGE; // The style added to each docker
 	const auto width = GetWindowRect().Size().cx;
-	input = AddDockedChild(new CDockText, DS_DOCKED_LEFT | dw_style, width / 2.8, ID_DOCK_TEXT1);
+	input = AddDockedChild(new CDockText, DS_DOCKED_LEFT | dw_style, width / 2.5, ID_DOCK_TEXT1);
 	trans = AddDockedChild(new CDockImage, DS_DOCKED_LEFT | DS_DOCKED_RIGHT | dw_style, width / 3, ID_DOCK_GRAFF1);
-	auto t = trans->AddDockedChild(new CDockTranscriptText, DS_DOCKED_BOTTOM | dw_style, 400, ID_DOCK_TEXT2);
+	auto t = trans->AddDockedChild(new CDockTranscriptText, DS_DOCKED_BOTTOM | dw_style, 200, ID_DOCK_TEXT2);
 	t->AddDockedChild(new CDockResponseText, DS_DOCKED_RIGHT | dw_style, width / 3, ID_DOCK_TEXT3);
 }
 
@@ -50,8 +50,12 @@ void CMainFrame::load_full_image_dockers()
 {
 	const DWORD dw_style = DS_CLIENTEDGE; // The style added to each docker
 	const auto width = GetWindowRect().Size().cx;
-	AddDockedChild(new CDockImage, DS_DOCKED_LEFT | DS_DOCKED_RIGHT, dw_style,   ID_DOCK_GRAFF1);
-	trans->AddDockedChild(new CDockTranscriptText, DS_DOCKED_BOTTOM | dw_style, 200, ID_DOCK_TEXT2);
+	image=AddDockedChild(new CDockImage, DS_DOCKED_LEFT | DS_DOCKED_RIGHT, dw_style,   ID_DOCK_GRAFF1);
+	trans = image->AddDockedChild(new CDockTranscriptText, DS_DOCKED_BOTTOM | dw_style, 200, ID_DOCK_TEXT2);
+	output=trans->AddDockedChild(new CDockResponseText, DS_DOCKED_CONTAINER | dw_style, 200, ID_DOCK_TEXT3);
+	input=trans->AddDockedChild(new CDockText, DS_DOCKED_CONTAINER | dw_style, 200, ID_DOCK_TEXT1);
+	
+	
 }
 
 
@@ -784,7 +788,7 @@ LRESULT CMainFrame::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 		case 2:
 			on_dock_browser();
 			break;
-		case 3:
+		case 20:
 			on_dock_full_browser();
 			break;
 		case 4:

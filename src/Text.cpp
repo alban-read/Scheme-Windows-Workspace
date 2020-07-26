@@ -28,6 +28,7 @@ extern char* noncezero;
 
 namespace GlobalGraphics {
 	Gdiplus::Bitmap* __stdcall get_display_surface(void);
+	void swap_buffers(int n);
 	int graphics_mode();
 }
 
@@ -251,6 +252,7 @@ DWORD WINAPI  process_commands(LPVOID x)
 					CALL0(&eval.c_str()[1]);
 				}
 				else {
+				
 					CALL1("eval->string", Sstring(eval.c_str()));
 				}
 				
@@ -314,35 +316,125 @@ void cancel_commands()
 }
 
 
-// feeds the every_step function into the fast path of the scheme 
-// evaluator thread.
-VOID CALLBACK run_every(PVOID lpParam, BOOLEAN TimerOrWaitFired) {
-	WaitForSingleObject(g_script_mutex, INFINITE);
-	CALL0("every_step");
-	ReleaseMutex(g_script_mutex);
-}
-
-HANDLE timer_queue = nullptr;
-HANDLE h_timer = nullptr;
+ 
+HANDLE every_timer_queue = nullptr;
+HANDLE h_every_timer = nullptr;
+HANDLE after_timer_queue = nullptr;
+ptr every_function;
 
 void stop_every() {
-	if (timer_queue != nullptr && h_timer != nullptr) {
-		DeleteTimerQueueTimer(timer_queue, h_timer, NULL);
-		timer_queue = nullptr; h_timer = nullptr;
+	if (every_timer_queue != nullptr && h_every_timer != nullptr) {
+		DeleteTimerQueueTimer(every_timer_queue, h_every_timer, NULL);
+		every_timer_queue = nullptr; h_every_timer = nullptr;
 	}
 }
 
-void start_every(int delay, int period) {
+ 
+int swap_mode;
+VOID CALLBACK run_every(PVOID lpParam, BOOLEAN TimerOrWaitFired) {
 
-	timer_queue = nullptr;
-	h_timer = nullptr;
-	if (nullptr == timer_queue)
-	{
-		timer_queue = CreateTimerQueue();
-	}
+	WaitForSingleObject(g_script_mutex, INFINITE);
 	try {
-		CreateTimerQueueTimer(&h_timer, timer_queue,
-			static_cast<WAITORTIMERCALLBACK>(run_every), nullptr, delay, period, WT_EXECUTEINTIMERTHREAD);
+		// the procedure may have changed.
+		if (Sprocedurep(lpParam)) {
+			Scall0(lpParam);
+		}
+	}
+	catch (const CException& e)
+	{
+		ReleaseMutex(g_script_mutex);
+		appendTranscriptNL("Error in an every_step; stopping stepping.");
+		stop_every();
+		return;
+	}
+	ReleaseMutex(g_script_mutex);
+	// copy active surface to display surface.
+	GlobalGraphics::swap_buffers(swap_mode);
+
+}
+
+
+
+void start_every(int delay, int period, ptr p) {
+
+	stop_every();
+ 
+	if (nullptr == every_timer_queue)
+	{
+		every_timer_queue = CreateTimerQueue();
+
+		try {
+			CreateTimerQueueTimer(&h_every_timer, every_timer_queue,
+				static_cast<WAITORTIMERCALLBACK>(run_every), p, delay, period, WT_EXECUTEINTIMERTHREAD);
+		}
+		catch (const CException& e)
+		{
+			// Display the exception and quit
+			MessageBox(nullptr, e.GetText(), AtoT(e.what()), MB_ICONERROR);
+			return;
+		}
+	} 
+}
+
+// only one thing runs every.
+ptr every(int delay, int period, int mode, ptr p)
+{
+
+	swap_mode = mode;
+	if (delay == 0 || period == 0) {
+		stop_every();
+		Sunlock_object(every_function);
+	}
+	else {
+
+		Slock_object(p);
+		every_function = p;
+		if ( Sprocedurep(p)) {
+			start_every(delay, period, p);
+			return Strue;
+		}
+		else {
+			return Sfalse;
+		}
+	}
+	return Strue;
+}
+
+
+ 
+VOID CALLBACK run_after(PVOID lpParam, BOOLEAN TimerOrWaitFired) {
+
+	WaitForSingleObject(g_script_mutex, INFINITE);
+	try {
+
+		if (Sprocedurep(lpParam)) {
+			Scall0(lpParam);
+			Sunlock_object(lpParam);
+		}
+	}
+	catch (const CException& e)
+	{
+		ReleaseMutex(g_script_mutex);
+		appendTranscriptNL("Error in an after.");
+		return;
+	}
+	ReleaseMutex(g_script_mutex);
+
+}
+
+
+void start_after(int delay, ptr p) {
+	HANDLE h_after_timer = nullptr;
+	Slock_object(p);
+	try {
+
+		// do not recreate queue
+		if (after_timer_queue == nullptr) {
+			after_timer_queue = CreateTimerQueue();
+		}
+		// add event to queue.
+		CreateTimerQueueTimer(&h_after_timer, after_timer_queue,
+			static_cast<WAITORTIMERCALLBACK>(run_after), p, delay, 0, WT_EXECUTEINTIMERTHREAD);
 	}
 	catch (const CException& e)
 	{
@@ -352,15 +444,15 @@ void start_every(int delay, int period) {
 	}
 }
 
-ptr every(int delay, int period) {
-	if (delay == 0 || period == 0) {
-		stop_every();
+ptr after(int delay, ptr p)
+{
+	if (Sprocedurep(p)) {
+		start_after(delay, p);
+		return Strue;
 	}
-	else {
-		start_every(delay, period);
-	}
-	return Strue;
+	return Sfalse;
 }
+
 
 void eval_scite(HWND hc)
 {
@@ -1115,7 +1207,6 @@ LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			g.SetPixelOffsetMode(Gdiplus::PixelOffsetModeNone);
 			g.SetSmoothingMode(Gdiplus::SmoothingModeNone);
 			g.SetInterpolationMode(Gdiplus::InterpolationModeDefault);
-			g.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
 			WaitForSingleObject(g_image_rotation_mutex, INFINITE);
 			g.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w, h);
 			ReleaseMutex(g_image_rotation_mutex);
@@ -1129,7 +1220,8 @@ LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 	{
 		// display background image; or hatch; behind our image
 		int _graphics_mode = GlobalGraphics::graphics_mode();
-		if (GlobalGraphics::get_display_surface() != nullptr) {
+		auto display_surface = GlobalGraphics::get_display_surface();
+		if (display_surface != nullptr) {
 
 			const auto cw = GetClientRect().Width();
 			const auto ch = GetClientRect().Height();
@@ -1144,7 +1236,6 @@ LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			}
 
 			if (image_view_bitmap == nullptr) {
-				appendTranscriptNL("*new screen image*");
 				image_view_bitmap = new Gdiplus::Bitmap(cw, ch, PixelFormat32bppRGB);
 			}
 
@@ -1154,8 +1245,8 @@ LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			// g2 can draw onto image_view.
 			Gdiplus::Graphics g2(image_view_bitmap);
 
-			const auto h = GlobalGraphics::get_display_surface()->GetHeight();
-			const auto w = GlobalGraphics::get_display_surface()->GetWidth();
+			const auto h = display_surface->GetHeight();
+			const auto w = display_surface->GetWidth();
 
 			// if not in a fill mode have a border to draw.
 			if (_graphics_mode != 4 ) {
@@ -1172,38 +1263,38 @@ LRESULT CViewImage::WndProc(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			switch (_graphics_mode) {
 			case 0:
 				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w, h);
+				g2.DrawImage(display_surface, 5, 5, w, h);
 				break;
 			case 1: // 1:2
 				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w / 2, h / 2);
+				g2.DrawImage(display_surface, 5, 5, w / 2, h / 2);
 				break;
 			case 2: // 1:4
 				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w / 4, h / 4);
+				g2.DrawImage(display_surface, 5, 5, w / 4, h / 4);
 				break;
 			case 3: // 2:1
 				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(GlobalGraphics::get_display_surface(), 5, 5, w * 2, h * 2);
+				g2.DrawImage(display_surface, 5, 5, w * 2, h * 2);
 				break;
 			case 4: // Fill direct to hdc window.
-				g.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, cw - 2, ch - 2);
+				g.DrawImage(display_surface, 1, 1, cw - 2, ch - 2);
 				break;
 			case 5: // 2:3
 				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, w * 2 / 3, h * 2 / 3);
+				g2.DrawImage(display_surface, 1, 1, w * 2 / 3, h * 2 / 3);
 				break;
 			case 6: // 3:4
 				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, w * 3 / 4, h * 3 / 4);
+				g2.DrawImage(display_surface, 1, 1, w * 3 / 4, h * 3 / 4);
 				break;
 			case 7: // 3:2
 				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, w * 3 / 2, h * 3 / 2);
+				g2.DrawImage(display_surface, 1, 1, w * 3 / 2, h * 3 / 2);
 				break;
 			case 8: // 1:1 - faster
 				g2.DrawRectangle(&pen_black, 0, 0, cw - 1, ch - 1);
-				g2.DrawImage(GlobalGraphics::get_display_surface(), 1, 1, w * 3 / 2, h * 3 / 2);
+				g2.DrawImage(display_surface, 1, 1, w * 3 / 2, h * 3 / 2);
 				break;
 			}
 			ReleaseMutex(g_image_rotation_mutex);

@@ -85,15 +85,17 @@ These are the main point of the app; these are modern minimal windows editors; w
 
 Arrow keys move in the pane.
 
-You clear a pane with <control><l> as you may expect.
+You clear a pane with **control-l** (L) as you may expect.
 
-In the example above if you <control><return> the whole pane will be evaluated.
+If you type **control-return** the whole pane will be evaluated.
 
-In the example above if you select just the fib execution; you can <shift><return>  to execute just that function.
+In the example above if you select just the fib execution; you can **shift-return** to execute just that function.
 
-The main thing I miss is in the editor is a code formatting function; so I plan to add that one day.
+This editor has the sort of commands you might expect from a 1990s windows application.
 
-This editor has the sort of retro commands you might expect from a 1990s windows application; rather than a 1970s vintage teletype. Lets not judge one other.
+It does not have the sort of commands you may recall from a 1970s vintage teletype. 
+
+Lets not judge one other.
 
 ##### Zoomable
 
@@ -112,28 +114,30 @@ This editor has the sort of retro commands you might expect from a 1990s windows
 
 *Be mindful; that some code can run away; and never stop; which may require you to kill the app.*
 
-The app now simulates a user typing control-c into a terminal when the escape is pressed.
+The app now simulates a user typing control-c into a terminal when the escape key is pressed.
 
 It needs to do this in a fairly convoluted way; that required an extra function to be added to the scheme code and use of the scheme timer.
 
-As Scheme runs; at safe points; it checks to see if there are any error conditions; the in-scheme escape key handler works by politely creating a keyboard interrupt that interrupt is defined to sets a timer that raises an escape key pressed error; safely in a few cycles time.
+As Scheme runs; at safe points; it checks to see if there are any error conditions; the in-scheme escape key handler works by politely creating a keyboard interrupt. 
+
+That interrupt sets a timer that later raises an escape key pressed error; it does this safely in a few cycles time.  This is how it is polite.
 
 In this way we avoid intervening in normal code execution in a way that usually causes a crash.
 
-In addition another escape key watcher runs in-app.
+In addition another escape key watcher runs in the application.
 
-This in-app watcher will drain the script queue of any pending requests.
+When the application sees escape it will drain the script queue of any pending requests.
 
-The combined effect of both watchers is to :-
+The combined effect is to :-
 
 - Cancel any pending work in the queue.
-- Cancel any running task.
+- Cancel any running task in Scheme in a few moments.
 
 
 
 **Checking the escape key status**
 
-You can also if you wish add a third level of checks for the escape key into any loops you write in your scripts.
+You can also if you wish add a third level of checks for the escape key in your scripts.
 
 For example this is an infinite loop; that will start to count up to infinity; not a good thing to tell a computer to do.
 
@@ -145,7 +149,7 @@ For example this is an infinite loop; that will start to count up to infinity; n
   (loop (+ 1 i)))
 ```
 
-To avoid never ending scripts from running away you can add an escape key check to any functions that might repeat forever.
+You could add an escape key check
 
 ```scheme
 (when (escape-pressed?) (raise "Escape Key!"))
@@ -161,6 +165,6 @@ So we have :-
   (loop (+ 1 i)))
 ```
 
-This user side check is useful if you decide to use unmodified Chez Scheme DLLS.
+This user side check is useful if you decide to use the unmodified Chez Scheme DLLS.
 
  [Index](Readme.html)  
