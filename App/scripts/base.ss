@@ -362,6 +362,11 @@
  (lambda (i)
    ((foreign-procedure "MAKETEXTUREBRUSH"
     (void*) int) i)))
+
+(define clear-all-textures
+ (lambda ()
+   ((foreign-procedure "clear_all_textures"
+    () ptr) )))
 	
 (define hatch
  (lambda (i a r g b a0 r0 g0 b0 )

@@ -47,5 +47,3 @@ Zoom in and out with **ctrl-mouse scroll**
 **shift-return** evaluates the selection
 
 Zoom in and out with **ctrl-mouse scroll**
-
- [Index](Readme.html)  

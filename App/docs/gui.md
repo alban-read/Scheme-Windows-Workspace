@@ -44,7 +44,7 @@ Selecting some text and pressing **shift-return** in the browser pane evaluates 
 
 This browser view is fully programmable; I do not recommend taking advantage of this; there are better ways to drive a browser from scheme.  
 
- [Index](Readme.html)  
+ [Index](welcome.html)  
 
 ------
 
@@ -62,7 +62,7 @@ Use the GDI+ library; a software based; alpha blending graphics library.
 
 - Use Image Layout to display the graphics pane; your graphics commands will be displayed there.
 
- [Index](Readme.html)  
+ [Index](welcome.html)  
 
 
 
@@ -102,7 +102,7 @@ Lets not judge one other.
 - The text view zooms in and out; use control and mouse wheel.
 - The html view does the same.
 
- [Index](Readme.html)  
+ [Index](welcome.html)  
 
  
 
@@ -167,4 +167,4 @@ So we have :-
 
 This user side check is useful if you decide to use the unmodified Chez Scheme DLLS.
 
- [Index](Readme.html)  
+ [Index](welcome.html)  
