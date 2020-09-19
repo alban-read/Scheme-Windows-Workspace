@@ -1,6 +1,9 @@
 # Scheme-Windows-Workspace
 This is a windows workspace for Chez Scheme.
 
+(Latest version is over here)[https://github.com/alban-read/Scheme-Windows-Tiled-Shell]
+
+
 ## Reason
 
 Provides a simple alternative to a terminal; creates a workspace type interface; that prevents text rushing off the screen;  keeps results and output into a different pane than the script source.
